@@ -177,7 +177,7 @@ class FaeAccountInvoice(models.Model):
     x_xml_respuesta_fname = fields.Char(string="Nombre archivo Respuesta DGT", required=False, copy=False )
 
     x_amount_tax = fields.Monetary(string='Impuestos', readonly=True, )
-    x_amount_total = fields.Monetary(string='Total', readonly=True, )
+    x_amount_total = fields.Monetary(string='Total Mov', readonly=True, )
     x_currency_rate = fields.Float(string="Tipo Cambio", required=False, copy=False)
     x_response_date = fields.Datetime(string="Fecha Respuesta", required=False, copy=False)
     x_mensaje_respuesta = fields.Char(string="Mensaje Respuesta", copy=False)
@@ -253,6 +253,7 @@ class FaeAccountInvoice(models.Model):
                     inv.x_show_generate_xml_button = False
             else:
                 inv.x_show_generate_xml_button = False
+
 
     @api.onchange('partner_id', 'company_id')
     def _get_economic_activities(self):
@@ -525,10 +526,10 @@ class FaeAccountInvoice(models.Model):
                                 continue
                             if not line.product_id:
                                 raise UserError('Facturación electrónica no acepta líneas sin código artículo, ver: %s' % line.name)
-                            if inv.x_document_type != 'FEE':
+                            if inv.x_document_type != 'FEE' and line.product_id.type != 'service':
                                 if not (line.product_id.x_cabys_code_id and line.product_id.x_cabys_code_id.code):
                                     raise UserError('El artículo: %s no tiene código CAByS' % (line.product_id.default_code or line.product_id.name) )
-                            elif line.product_id and line.product_id.type != 'service' and not line.product_id.x_tariff_heading:
+                            if inv.x_document_type == 'FEE' and line.product_id and line.product_id.type != 'service' and not line.product_id.x_tariff_heading:
                                 raise UserError('El artículo: %s no tiene partida arancelaria y es requerida en facturas de Exportación'
                                                 % (line.product_id.default_code or line.product_id.name) )
 
