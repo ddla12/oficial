@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="account_bnk_stmt_cashbox_form_inherit" model="ir.ui.view">
+            <field name="name">account_bnk_stmt_cashbox.form.inherit</field>
+            <field name="model">account.bank.statement.cashbox</field>
+            <field name="inherit_id" ref="account.view_account_bnk_stmt_cashbox"/>
+            <field name="priority" eval="8"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='cashbox_lines_ids']//tree//field[@name='coin_value']" position="after">
+                    <field name="x_currency_id" width="15%"/>
+                    <field name="x_rate" width="15%" readonly="1"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
