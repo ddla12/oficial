@@ -22,6 +22,12 @@ class PosPaymentMethod(models.Model):
 
     x_payment_method_id = fields.Many2one("xpayment.method", string="Método pago DGT")
 
+    def _is_write_forbidden(self, fields):
+        if self.env.user.has_group('base.group_system'):
+            # para los administradores no valida si hay sessiones pendientes
+            return False
+        return super(PosPaymentMethod, self)._is_write_forbidden(fields)
+
 
 class PosMakePayment(models.TransientModel):
     _inherit = 'pos.make.payment'
