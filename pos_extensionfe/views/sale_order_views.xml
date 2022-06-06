@@ -9,7 +9,7 @@
                 <button name="send_to_pos"
                         string="Pasar a caja" type="object"
                         attrs="{'invisible': [('x_sent_to_pos','!=',False)]}"
-                        />
+                />
             </xpath>
             <xpath expr="//field[@name='partner_shipping_id']" position="after">
                 <field name="x_employee_id" attrs="{'required':True, 'readonly':[('state','!=','draft')] }" />
@@ -17,6 +17,7 @@
             <xpath expr="//field[@name='payment_term_id']" position="after">
                 <field name="x_sent_to_pos" invisible="1" />
                 <field name="x_document_type" attrs="{'readonly':[('x_sent_to_pos','=',True)] }" />
+                <field name="x_pos_config_id" attrs="{'readonly':[('x_sent_to_pos','=',True)] }" options="{'no_create':True, 'no_open':True}" />
             </xpath>
         </field>
     </record>

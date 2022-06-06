@@ -43,7 +43,7 @@ class POSConfigInherit(models.Model):
     # override este método para que muestre la session de cualquier usuario (sesiones de venta)
     def _compute_current_session(self):
         for pos_config in self:
-            opened_sessions = pos_config.session_ids.filtered(lambda s:  not s.x_employee_id and s.state not in ('closing_control','closed'))
+            opened_sessions = pos_config.session_ids.filtered(lambda s: not s.x_employee_id and s.state not in ('closing_control','closed'))
             session = pos_config.session_ids.filtered(lambda s: not s.x_employee_id and s.state not in ('closing_control','closed') and not s.rescue).sorted(lambda r: r.id, reverse=True)
             # cierra todas las sessiones de ventas (las que no tiene cajero asignado) que no tengan ordenes asociadas
             # Conserva la session[0]

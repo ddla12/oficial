@@ -21,7 +21,22 @@ class SaleOrder(models.Model):
                                         )    
     x_sent_to_pos = fields.Boolean(default=False, copy=False )
     x_date_sent_pos = fields.Datetime(string="Fecha Enviado", copy=False )
+    x_pos_config_id = fields.Many2one('pos.config', string="Caja Punto Venta", copy=False)
 
+    @api.onchange('x_document_type')
+    def _onchange_x_document_type(self):
+        if self.x_document_type and not self.x_pos_config_id:
+            self.x_pos_config_id = self.get_pos_config_by_user()
+
+    def get_pos_config_by_user(self):
+        emp = self.env['hr.employee'].search([('user_id', '=', self.env.uid), ('company_id', '=', self.env.company.id)], limit=1)
+        pos_config_id = None
+        if emp:
+            for pos_config in self.env['pos.config'].search([('company_id', '=', self.env.company.id)]):
+                if emp.id in pos_config.employee_ids.ids:
+                    pos_config_id = pos_config.id
+                    break
+        return pos_config_id
 
     def send_to_pos(self):
         if self.x_sent_to_pos:
@@ -33,10 +48,14 @@ class SaleOrder(models.Model):
         if not self.x_document_type:
             raise ValidationError('Debe seleccionar el tipo de comprobante que necesita el cliente')
 
-        pos_config = self.env['pos.config'].search([('company_id','=', self.company_id.id),('active','=',True)], limit=1)
-        if not pos_config:
-            raise ValidationError('No existe un punto de venta definido en la compañía: %s' % (self.company_id.name))
-        opened_session = self.env['pos.session'].search([('config_id','=',pos_config.id), ('state', '=', 'opened')], order='id desc')
+        # pos_config = self.env['pos.config'].search([('company_id','=', self.company_id.id),('active','=',True)], limit=1)
+        # if not pos_config:
+        #    raise ValidationError('No existe un punto de venta definido en la compañía: %s' % (self.company_id.name))
+
+        if not self.x_pos_config_id:
+            raise ValidationError('No han seleccionado la caja punto de venta destino')
+
+        opened_session = self.env['pos.session'].search([('config_id', '=', self.x_pos_config_id.id), ('state', '=', 'opened')], order='id desc')
 
         if not opened_session:
             raise ValidationError('No existe ninguna sesión de Punto de Venta abierta, en el punto de venta: %s ' % (pos_config.name))
