@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record id="xaccount_form_account_move_inherit" model="ir.ui.view">
+            <field name="name">xaccount.form.account.move.inherit</field>
+            <field name="model">account.move</field>
+            <field name="priority">20</field>
+            <field name="inherit_id" ref="account.view_move_form"/>
+            <field name="arch" type="xml">
+                <data>
+                    <field name="invoice_date" position="attributes">
+                        <attribute name="attrs">{'invisible': [('state','=','draft')]}</attribute>
+                    </field>
+                </data>
+            </field>
+        </record>
+    </data>
+</odoo>
