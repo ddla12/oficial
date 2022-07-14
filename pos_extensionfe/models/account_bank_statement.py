@@ -2,6 +2,7 @@ from odoo import fields, models, api, _
 
 class AccountCashboxLineExtend(models.Model):
     _inherit = 'account.cashbox.line'
+    _order = 'x_currency_id asc, coin_value'
 
     @api.depends('coin_value', 'number', 'x_rate')
     def _sub_total(self):
@@ -13,3 +14,12 @@ class AccountCashboxLineExtend(models.Model):
                                     string='Tipo de Moneda',domain="[('active', '=', True)]")
     x_rate = fields.Float(string='Tasa de Cambio',related='x_currency_id.rate')
 
+    x_cr_rate_selling = fields.Float(string='Factor de Cambio', compute='_compute_cr_rate_selling')
+
+    @api.depends('x_currency_id')
+    def _compute_cr_rate_selling(self):
+        for line in self:
+            if line.x_currency_id.name == 'USD':
+                line.x_cr_rate_selling = round(1/line.x_rate,2)
+            else:
+                line.x_cr_rate_selling = 1

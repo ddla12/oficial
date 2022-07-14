@@ -37,6 +37,8 @@ class PosOrderLineInherit(models.Model):
     _inherit = "pos.order.line"
 
     tax_ids = fields.Many2many('account.tax', string='Taxes', readonly=False)
+    x_tax_ids_for_calc_amount = fields.Boolean(default=False, copy=True,
+                                               help='Indica que los tax_ids registrados en la tabla son lo que se usan para el cálculo de impuesto')
     x_parent_state = fields.Selection(related='order_id.state', store=False, readonly=True)
     x_product_code = fields.Char(related='product_id.default_code', store=False, readonly=True)
 
@@ -48,36 +50,71 @@ class PosOrderLineInherit(models.Model):
     x_last_balance = fields.Float(string="Monto Anterior", help='Saldo por Cobrar antes de este pago',)
 
 
+    # override el onchange original de odoo, para poder permitir cambiar los impuestos
     @api.onchange('product_id')
-    def _onchange_pos_line_product_id(self):
+    def _onchange_product_id(self):
         if not self.product_id.id:
             return
-        if self.product_id and not self.product_id.x_cabys_code_id:
-            raise ValidationError('El artículo: %s no tiene código CAByS' % (self.product_id.default_code or self.product_id.name) )
+        if not self.order_id.pricelist_id:
+            raise UserError(
+                _('You have to select a pricelist in the sale form !\n'
+                  'Please set one before choosing a product.'))
+        if self.product_id.type != 'service' and not self.product_id.x_cabys_code_id:
+            raise UserError('El artículo: %s no tiene código CAByS' % (self.product_id.default_code or self.product_id.name) )
 
-        res = super(PosOrderLineInherit, self)._onchange_product_id()
+        self.x_tax_ids_for_calc_amount = True
+        tax_ids = self.product_id.taxes_id.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
+
+        price = self.order_id.pricelist_id.get_product_price(self.product_id, self.qty or 1.0, self.order_id.partner_id)
+        self._onchange_qty()
+        tax_ids_after_fiscal_position = self.order_id.fiscal_position_id.map_tax(tax_ids, self.product_id, self.order_id.partner_id)
+        self.tax_ids = tax_ids_after_fiscal_position
+        self.tax_ids_after_fiscal_position = tax_ids_after_fiscal_position
+        self.price_unit = self.env['account.tax']._fix_tax_included_price_company(price, self.product_id.taxes_id, tax_ids_after_fiscal_position, self.company_id)
+
+    # override el onchange original de odoo, para poder permitir cambiar los impuestos
+    # @api.model
+    @api.onchange('qty', 'discount', 'price_unit', 'tax_ids')
+    def _onchange_qty(self):
+        res = self._compute_amount_line_all()
+        self.price_subtotal = res['price_subtotal']
+        self.price_subtotal_incl = res['price_subtotal_incl']
 
     @api.onchange('qty')
     def _onchange_pos_line_qty(self):
         if self.order_id.x_move_type == 'refund' and self.qty > 0:
             self.qty = -abs(self.qty)
 
-    
     @api.onchange('tax_ids')
-    def _change_tax_ids_after_fiscal_position(self):
-        if self.product_id:
-            self._get_tax_ids_after_fiscal_position()        
+    def _change_xpos_line_tax_ids(self):
+        for line in self:
+            line.x_tax_ids_for_calc_amount = True
+            if line.product_id:
+                line._get_tax_ids_after_fiscal_position()
+            res = line._compute_amount_line_all()
+            line.update(res)
+        self.order_id.calc_amount_total()
 
+    @api.model
+    def _get_tax_ids_after_fiscal_position(self):
+        for line in self:
+            line.tax_ids_after_fiscal_position = line.tax_ids if line.x_tax_ids_for_calc_amount else \
+                                                line.order_id.fiscal_position_id.map_tax(line.tax_ids, line.product_id, line.order_id.partner_id)
 
     @api.model
     def _compute_amount_line_all(self):
+        self.ensure_one()
         if not self.currency_id:
             currency = self.env.company.currency_id
         else:
             currency = self.currency_id
-        res = super(PosOrderLineInherit, self)._compute_amount_line_all()
-        res['price_subtotal_incl'] = currency.round( res['price_subtotal_incl'] )
-        res['price_subtotal'] = currency.round( res['price_subtotal'] )
+
+        price = self.price_unit * (1 - (self.discount or 0.0) / 100.0)
+        taxes = self.tax_ids.compute_all(price, self.order_id.pricelist_id.currency_id, self.qty, product=self.product_id, partner=self.order_id.partner_id)
+        res = {
+            'price_subtotal_incl': currency.round(taxes['total_included']),
+            'price_subtotal': currency.round(taxes['total_excluded']),
+            }
         return res
 
 
@@ -94,9 +131,11 @@ class PosOrderInherit(models.Model):
     # redefine campos existentes
     company_id = fields.Many2one(default=lambda self: self.env.company)
     session_id = fields.Many2one(readonly=False, default=lambda self: self.env.context.get("cashier_session_id", 0))
-    amount_return = fields.Float(default=0)
+    amount_return = fields.Float(default=0, copy=False,)
+    amount_paid = fields.Float(default=0, copy=False)
+    payment_ids = fields.One2many(copy=False)
 
-    # Otros campos    
+    # Otros campos
     employee_id = fields.Many2one('hr.employee', string='Vendedor', store=True, readonly=True)
     currency_id = fields.Many2one('res.currency', string='Currency', store=True,                                 
                                     default=_default_xpos_currency,
@@ -163,7 +202,7 @@ class PosOrderInherit(models.Model):
     x_sale_order_id = fields.Many2one("sale.order", string="Cotización", copy=False)
     x_rejection_processed  = fields.Boolean(string="Rechazo DGT Reprocesado", default=False, copy=False,
                                             help="Indica si el Documento rechazado fue reprocesado")
-    x_pend_recalc = fields.Boolean(string='Pending Recalculation', copy=False, default = True)
+    x_pend_recalc = fields.Boolean(string='Pending Recalculation', copy=False, default=True)
 
     _sql_constraints = [('post_order_x_electronic_code50_uniq', 'unique (company_id, x_electronic_code50)',
                         "La clave numérica deben ser única"),
@@ -182,43 +221,54 @@ class PosOrderInherit(models.Model):
         res['arch'] = etree.tostring(doc)
         return res
 
-    def _compute_amount_line_all(self):
-        self.ensure_one()
-        if not self.order_id.pricelist_id:
-            self.order_id.pricelist_id = self.env['product.pricelist'].search(
-                [('company_id', 'in', (False, self.env.company.id)),
-                 ('currency_id', '=', self.env.company.currency_id.id)], limit=1)
-
-        fpos = self.order_id.fiscal_position_id
-        tax_ids_after_fiscal_position = fpos.map_tax(self.tax_ids, self.product_id, self.order_id.partner_id)
-        price = self.price_unit * (1 - (self.discount or 0.0) / 100.0)
-        taxes = tax_ids_after_fiscal_position.compute_all(price, self.order_id.pricelist_id.currency_id, self.qty, product=self.product_id, partner=self.order_id.partner_id)
-        return {
-            'price_subtotal_incl': taxes['total_included'],
-            'price_subtotal': taxes['total_excluded'],
-        }
-
+    # override la función original de odoo, para poder permitir cambiar los impuestos
+    @api.model
+    def _amount_line_tax(self, line, fiscal_position_id):
+        taxes = line.tax_ids
+        price = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+        taxes = taxes.compute_all(price, line.order_id.pricelist_id.currency_id, line.qty, product=line.product_id, partner=line.order_id.partner_id or False)['taxes']
+        return sum(tax.get('amount', 0.0) for tax in taxes)
 
     @api.onchange('partner_id')
-    def _onchange_partner_id(self):
-        if self.partner_id:
-            self.x_name_to_print = self.partner_id.name
+    def _onchange_xpos_partner_id(self):
+        for rec in self:
+            if rec.partner_id:
+                rec.x_name_to_print = rec.partner_id.name
+            if rec.x_move_type == 'refund':
+                rec.x_document_type = 'NC' if not rec.x_invoice_reference_id or rec.x_invoice_reference_id.x_state_dgt in ('2', 'FI') else None
+            elif rec.partner_id and rec.partner_id.x_identification_type_id and rec.partner_id.vat:
+                rec.x_document_type = 'FE'
+            else:
+                rec.x_document_type = 'TE'
+
+            if rec.partner_id:
+                rec.x_name_to_print = rec.partner_id.name
+
+            rec.fiscal_position_id = None if not rec.partner_id else rec.partner_id.property_account_position_id
+            if rec.lines:
+                rec._onchange_fiscal_position_id()
+                rec.calc_amount_line_all()
         return super(PosOrderInherit, self)._onchange_partner_id()
+
+    @api.onchange('fiscal_position_id')
+    def _onchange_fiscal_position_id(self):
+        for line in self.lines:
+            tax_ids = line.product_id.taxes_id.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
+            line.tax_ids = self.fiscal_position_id.map_tax(tax_ids, line.product_id, self.partner_id)
+            line.tax_ids_after_fiscal_position = line.tax_ids
+
 
     @api.onchange('payment_ids', 'lines')
     def _onchange_amount_all(self):
         for order in self:
-
             currency = order.pricelist_id.currency_id
             if not currency:
                 order.pricelist_id = self.env['product.pricelist'].search([('company_id', 'in', (False, self.env.company.id)),
                                                       ('currency_id', '=', self.env.company.currency_id.id)], limit=1)
                 currency = order.pricelist_id.currency_id
-
             order.amount_paid = sum(payment.amount for payment in order.payment_ids)
             order.amount_return = sum(payment.amount < 0 and payment.amount or 0 for payment in order.payment_ids)
-            order.amount_tax = currency.round(
-                sum(self._amount_line_tax(line, order.fiscal_position_id) for line in order.lines))
+            order.amount_tax = currency.round(sum(self._amount_line_tax(line, order.fiscal_position_id) for line in order.lines))
             amount_untaxed = currency.round(sum(line.price_subtotal for line in order.lines))
             order.amount_total = order.amount_tax + amount_untaxed
 
@@ -249,7 +299,7 @@ class PosOrderInherit(models.Model):
                 'session_id': session_id,
                 'date_order': fields.Datetime.now(),
                 'pos_reference': self.pos_reference,
-                'lines': False,
+                'lines': [],
                 'amount_tax': abs(self.amount_tax) * signo,
                 'amount_total': abs(self.amount_total) * signo,
                 'amount_paid': 0,
@@ -356,24 +406,6 @@ class PosOrderInherit(models.Model):
             'target': 'current',
         }
 
-    @api.onchange('partner_id')
-    def _onchange_xpos_partner_id(self):
-        for rec in self:
-            if rec.x_move_type == 'refund':
-                rec.x_document_type = 'NC'
-            elif not rec.partner_id:
-                rec.x_document_type = 'TE'
-            else:
-                rec.x_document_type = 'FE'
-            
-            if rec.partner_id:
-                rec.x_name_to_print = rec.partner_id.name
-
-            rec.fiscal_position_id = None if not rec.partner_id else rec.partner_id.property_account_position_id
-            if rec.lines:
-                rec.calc_amount_line_all()
-
-    #---- onchanges
     @api.onchange('x_document_type')
     def _onchange_document_type(self):
         if not self.x_document_type or self.x_move_type == 'receipt':
@@ -387,12 +419,10 @@ class PosOrderInherit(models.Model):
         elif self.x_move_type == 'invoice' and self.x_document_type == 'NC':
             self.x_document_type = 'TE'
 
-    # ---- onchanges
     @api.onchange('session_id')
     def _onchange_session_id(self):
         if self.session_id:
             self.company_id = self.session_id.company_id.id
-
 
     @api.model
     def _order_fields(self, ui_order):
@@ -443,6 +473,13 @@ class PosOrderInherit(models.Model):
 
     def current_cashier_session(self):
         return self.env['pos.session'].search([('id', '=', self.x_cashier_session_id)], limit=1)
+
+    def calc_amount_total(self):
+        for order in self:
+            currency = order.pricelist_id.currency_id
+            order.amount_tax = currency.round(sum(self._amount_line_tax(line, order.fiscal_position_id) for line in order.lines))
+            amount_untaxed = currency.round(sum(line.price_subtotal for line in order.lines))
+            order.amount_total = order.amount_tax + amount_untaxed
 
     def calc_amount_line_all(self):
         cant_lineas = 0
@@ -508,6 +545,17 @@ class PosOrderInherit(models.Model):
                 res.x_document_type = 'NC'
             elif not res.x_document_type:
                 res.x_document_type = 'FE' if res.partner_id else 'TE'
+        pend_recalc = False
+        for line in res.lines:
+            if not line.x_tax_ids_for_calc_amount:
+                line.tax_ids = line.tax_ids_after_fiscal_position
+                line.x_tax_ids_for_calc_amount = True
+                val = line._compute_amount_line_all()
+                line.price_subtotal = val['price_subtotal']
+                line.price_subtotal_incl = val['price_subtotal_incl']
+                pend_recalc = True
+        if pend_recalc:
+            res.calc_amount_total()
         return res
 
     def write(self, vals):
@@ -940,13 +988,13 @@ class PosOrderInherit(models.Model):
 
                             # calcula el precio unitario sin el impuesto incluido
                             tax_ids = inv_line.tax_ids
-                            
+                            if not inv_line.x_tax_ids_for_calc_amount:
+                                fpos = inv.fiscal_position_id
+                                if fpos:
+                                    tax_ids = fpos.map_tax(tax_ids, inv_line.product_id, inv.partner_id)
+
                             if print_log:
                                 _logger.info('>> generate_xml_and_send:  tax_ids: %s  ', str(tax_ids))
-
-                            fpos = inv.fiscal_position_id
-                            if fpos:
-                                tax_ids = fpos.map_tax(tax_ids, inv_line.product_id, inv.partner_id)
 
                             line_taxes = tax_ids.compute_all(line_price_unit, inv.currency_id, 1.0, product=inv_line.product_id, partner=inv.partner_id)
 
@@ -957,7 +1005,10 @@ class PosOrderInherit(models.Model):
                             subtotal_line = round(base_line - descuento, 5)
 
                             # Elimina la doble comilla en la descripción, por eje. Tabla de 1" x 3" (la doble comilla usada para referirse a pulgada)
-                            detalle_linea = inv_line.name[:160].replace('"', '')
+                            detalle_linea = inv_line.full_product_name
+                            if not detalle_linea and inv_line.product_id:
+                                detalle_linea = inv_line.product_id.name or '.'
+                            detalle_linea = detalle_linea[:160].replace('"', '')
 
                             line = {
                                     "cantidad": line_quantity,
@@ -1180,6 +1231,14 @@ class PosOrderInherit(models.Model):
                 inv._message_post( subject='Error',
                                 body='generate_xml_and_send.exception:  Aviso!.\n Error : '+ str(error))
                 continue
+
+    # Para sobre escribir en cada instalación cuando los clientes quieran un desarrollo adicional
+    # El texto devuelto debe ser un elemento XML bien formado con nodo "OtroTexto" u "OtroContenido"
+    def xml_OtroTexto(self):
+        otro_texto = None
+        # if self.ref:
+        #     otro_texto = '<OtroTexto %s="%s">%s</OtroTexto>' % ('codigo', 'NumeroOrden', escape(self.ref))
+        return otro_texto
 
     # cron Job: Chequea en hacienda el status de documentos enviados
     def _check_status_pos_order_enviados(self, max_invoices=20):

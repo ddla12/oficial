@@ -45,5 +45,8 @@
             <menuitem id="menu_xfetchmail" name="Servidores de Correo" parent="menu_FAE_configuration" sequence="21"
                       action="action_fae_mail"/>
 
+        <menuitem id="xfae_menu_invoices_summary_report" name="Resumen de Ventas Consolidado" parent="account.menu_finance_reports"
+                  action="action_fae_invoices_summary_report" sequence="2" />
+
     </data>
 </odoo>
