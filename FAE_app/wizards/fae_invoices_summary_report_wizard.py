@@ -219,8 +219,8 @@ class invoices_report_wizard(models.TransientModel):
                                                              and r.x_sequence)
 
         account_moves_tax_not_fae = account_moves.filtered(lambda r: r.state != 'cancel'
-                                                                     and r.x_state_dgt == '1'
-                                                                     and not r.x_sequence)
+                                                                     and not r.x_sequence
+                                                                     and not r.x_state_dgt)
 
         account_moves_canceled = account_moves.filtered(lambda r: r.state == 'cancel'
                                                                   and r.x_sequence)
