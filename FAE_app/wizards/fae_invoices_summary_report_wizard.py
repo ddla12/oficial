@@ -262,7 +262,7 @@ class invoices_report_wizard(models.TransientModel):
                     'state_dgt': {'1': 'A', '2': 'Re'}.get(move.x_state_dgt, (move.x_state_dgt or ' ').lower()),
                     'date': move.date_order,
                     'issue_date': move.x_issue_date,
-                    'partner': move.x_name_to_print[:25],
+                    'partner': move.x_name_to_print[:25] if move.x_name_to_print else move.partner_id.name[:25],
                     'currency_name': move.currency_id.name,
                     'currency_symbol': move.currency_id.symbol,
                     'currency_rate': move.x_currency_rate,
