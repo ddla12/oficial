@@ -288,16 +288,17 @@ class invoices_report_wizard(models.TransientModel):
             lines_goods_with_doc, lines_services_with_doc = self.get_lines_by_tax(economic_activity, pos_orders_tax, account_moves_tax)
             lines_goods_not_doc, lines_services_not_doc = self.get_lines_by_tax(economic_activity, pos_orders_tax_not_fae, account_moves_tax_not_fae)
             lines_goods_canceled, lines_services_canceled = self.get_lines_by_tax(economic_activity, pos_orders_canceled, account_moves_canceled)
-
-            tax_lines_summary_ae.append({
-                'ae': economic_activity,
-                'lines_gppds_with_doc': lines_goods_with_doc,
-                'lines_services_with_doc': lines_services_with_doc,
-                'lines_gppds_not_doc': lines_goods_not_doc,
-                'lines_services_not_doc': lines_services_not_doc,
-                'lines_gppds_canceled': lines_goods_canceled,
-                'lines_services_canceled': lines_services_canceled,
-                })
+            if (lines_goods_with_doc or lines_services_with_doc
+                or lines_goods_not_doc or lines_services_not_doc or lines_goods_canceled or lines_services_canceled):
+                tax_lines_summary_ae.append({
+                    'ae': economic_activity,
+                    'lines_gppds_with_doc': lines_goods_with_doc,
+                    'lines_services_with_doc': lines_services_with_doc,
+                    'lines_gppds_not_doc': lines_goods_not_doc,
+                    'lines_services_not_doc': lines_services_not_doc,
+                    'lines_gppds_canceled': lines_goods_canceled,
+                    'lines_services_canceled': lines_services_canceled,
+                    })
         #
         list_docs = sorted(docs, key=lambda r: (r.get('currency'), r.get('td') or '_', r.get('sequence') or str(r.get('id'))))
 

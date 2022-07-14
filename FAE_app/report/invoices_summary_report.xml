@@ -92,7 +92,7 @@
                     <br/>
 
                     <t t-foreach="tax_lines_summary" t-as="lae">
-                        <h6> <span t-esc="'Actividad Eco.:  ' + lae['ae'].get('code') + ' - ' + lae['ae'].get('name','.')[:80]"/> </h6>
+                        <h6> <span t-esc="'Actividad Eco.:  ' + str(lae['ae'].get('code')) + ' - ' + str(lae['ae'].get('name','.'))[:80]"/> </h6>
                         <span>DOCUMENTOS ELECTRÓNICOS</span> <br/>
                         <t t-if="lae['lines_gppds_with_doc']">
                             <strong>Productos tipo Bienes</strong>
