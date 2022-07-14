@@ -12,7 +12,7 @@
                     <field name="employee_id" required="1" domain="[('x_is_cashier', '=', True)]"
                             options="{'no_quick_create':True,'no_create_edit':True,'no_open': True,}"/>
                     <field name="password" password="True" required="1"/>
-                    <field name="balance_start" attrs="{'readonly': [('started_session', '=', True)],'invisible':[('is_variable','=',False)]}"/>
+                    <field name="balance_start" attrs="{'readonly': [('is_variable', '=', False), ('started_session', '=', True)], 'invisible':[('started_session','=',True)]}"/>
                 </group>
                 <footer>
                     <button name="action_config_cashier_select" string="Aceptar" type="object" class="oe_highlight"

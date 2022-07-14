@@ -9,7 +9,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='cashbox_lines_ids']//tree//field[@name='coin_value']" position="after">
                     <field name="x_currency_id" width="15%"/>
-                    <field name="x_rate" width="15%" readonly="1"/>
+                    <field name="x_cr_rate_selling" width="15%" readonly="1"/>
                 </xpath>
             </field>
         </record>
