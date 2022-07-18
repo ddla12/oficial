@@ -484,7 +484,7 @@ def get_mensaje_respuesta(xml_respuesta):
 def gen_xml_v43(inv, sale_condition_code, total_servicio_gravado, total_servicio_exento, total_servicio_exonerado,
     total_mercaderia_gravado, total_mercaderia_exento, total_mercaderia_exonerado, total_otros_cargos,
     total_iva_devuelto, base_subtotal, total_impuestos, total_descuento,
-    lines, otrosCargos, currency_rate, other_text, tipo_documento_referencia, numero_documento_referencia,
+    lines, otrosCargos, currency_rate, other_extra_ext, tipo_documento_referencia, numero_documento_referencia,
     fecha_emision_referencia, codigo_referencia, razon_referencia ):
 
     numero_linea = 0
@@ -570,36 +570,39 @@ def gen_xml_v43(inv, sale_condition_code, total_servicio_gravado, total_servicio
 
     # _logger.info('>> gen_xml_v43: Inicia tag Receptor')
 
-    if inv.x_document_type == 'TE' or (inv.x_document_type == 'NC' and not receiver_company.vat):
+    if inv.x_document_type == 'NC' and not receiver_company.vat:
         pass
     else:
-        id_code = None
-        vat = None if not receiver_company.vat else re.sub('[^0-9]', '', receiver_company.vat)
-        if not receiver_company.x_identification_type_id and vat:
-            # Si no han puesto  el tipo de identificación en el receptor, entonces se trata de calcular
-            if len(vat) == 9:  # cedula fisica
-                id_code = '01'
-            elif len(vat) == 10:  # cedula juridica
-                id_code = '02'
-            elif len(vat) == 11 or len(vat) == 12:  # dimex
-                id_code = '03'
-            else:
-                id_code = '04'
-        elif receiver_company.x_identification_type_id:
-            id_code = receiver_company.x_identification_type_id.code
+        if receiver_company:
+            id_code = None
+            vat = None
+            if receiver_company.vat:
+                vat = re.sub('[^0-9]', '', receiver_company.vat)
+                if not receiver_company.x_identification_type_id and vat:
+                    # Si no han puesto  el tipo de identificación en el receptor, entonces se trata de calcular
+                    if len(vat) == 9:  # cedula fisica
+                        id_code = '01'
+                    elif len(vat) == 10:  # cedula juridica
+                        id_code = '02'
+                    elif len(vat) == 11 or len(vat) == 12:  # dimex
+                        id_code = '03'
+                    else:
+                        id_code = '04'
+                elif receiver_company.x_identification_type_id:
+                    id_code = receiver_company.x_identification_type_id.code
 
-        if receiver_company.name:
             xmlstr.Append('<Receptor>')
-            xmlstr.Tag('Nombre', escape(str(receiver_company.name))[:99] )
+            if receiver_company.name:
+                xmlstr.Tag('Nombre', escape(str(receiver_company.name))[:99] )
 
-            if inv.x_document_type == 'FEE' or id_code == 'E':
-                if receiver_company.vat:
-                    xmlstr.Tag('IdentificacionExtranjero',  receiver_company.vat[:20] )
-            else:
-                xmlstr.Append('<Identificacion>')
-                xmlstr.Tag('Tipo', id_code )
-                xmlstr.Tag('Numero', vat )
-                xmlstr.Append('</Identificacion>')
+                if inv.x_document_type == 'FEE' or id_code == 'E':
+                    if receiver_company.vat:
+                        xmlstr.Tag('IdentificacionExtranjero',  receiver_company.vat[:20] )
+                elif vat:
+                    xmlstr.Append('<Identificacion>')
+                    xmlstr.Tag('Tipo', id_code )
+                    xmlstr.Tag('Numero', vat )
+                    xmlstr.Append('</Identificacion>')
 
             if inv.x_document_type != 'FEE':
                 if receiver_company.state_id and receiver_company.x_country_county_id and receiver_company.x_country_district_id:
@@ -777,14 +780,23 @@ def gen_xml_v43(inv, sale_condition_code, total_servicio_gravado, total_servicio
         xmlstr.Tag('Razon', str(razon_referencia) )
         xmlstr.Append('</InformacionReferencia>')
 
-    #  Genera datos del tag Otros
-    if inv.x_document_type in ('FE','TE') and receiver_company.vat in ('3101420995', '3101011086', '3101375519', '3101695692'):
-        # Compañía Galletas Pozuela, Americana de Helados, Nacional de Chocolates y Nutresa
+    #  Genera datos del tag Otros correspondientes a Personas Jurídicas conócidas
+    if inv.x_document_type in ('FE','TE'):
         ref_oc = ref_oc if ref_oc else ''
-        xmlotros.Tag_prop('OtroTexto', 'codigo', 'NumeroPedido', str(escape(ref_oc)) )
+        if receiver_company.vat in ('3101420995', '3101011086', '3101375519', '3101695692'):
+            # Compañía Galletas Pozuela, Americana de Helados, Nacional de Chocolates y Nutresa
+            xmlotros.Tag_prop('OtroTexto', 'codigo', 'NumeroPedido', str(escape(ref_oc)) )
+        elif receiver_company.vat in ('3101173999', '3101173639'):
+            # Compañía Palmatica, Grupo Agroindustrial Numar
+            xmlotros.Tag_prop('OtroTexto', 'codigo', 'NumeroOrden', str(escape(ref_oc)) )
+    # NumeroOrden
+    if other_extra_ext:
+        xmlotros.Tag('OtroTexto', str(escape(other_extra_ext)))
 
+    # OtroTexto o OtroContenido en este orden estricto
+    other_text = inv.xml_OtroTexto()
     if other_text:
-        xmlotros.Tag('OtroTexto', str(escape(other_text)) )
+        xmlotros.Append(other_text)
 
     if xmlotros.get_value():
         xmlstr.Append('<Otros>')
@@ -978,8 +990,10 @@ def parser_xml_detail(self_doc, xml_doc):
     # Parser XML Details recibidos (Only Document)
     if not self_doc.id:
         return
+
     doc = xml_doc if not isinstance(xml_doc, bytes) else base64.decodebytes(xml_doc)
     doc = minidom.parseString(doc)
+
     values_dict = []
 
     tax_code_obj = self_doc.env['xtax.code'].search([])
@@ -1009,10 +1023,11 @@ def parser_xml_detail(self_doc, xml_doc):
                             'tax_factor': getElementTag_data(tax_line.getElementsByTagName('FactorIVA')),
                             'amount': getElementTag_data(tax_line.getElementsByTagName('Monto')),
                             }
-                tag_exoneracion = tax_line.getElementsByTagName('Exoneracion')
+                tag_exoneracion = getElementTag(tax_line, 'Exoneracion')
+                 # getElementTag
                 if tag_exoneracion:
                     tax_elem.update({'exoneration_rate': getElementTag_data(tag_exoneracion.getElementsByTagName('PorcentajeExoneracion')),
-                                     'MontoExoneracion': getElementTag_data(tag_exoneracion.getElementsByTagName('MontoExoneracion')),
+                                     'exoneration_amount': getElementTag_data(tag_exoneracion.getElementsByTagName('MontoExoneracion')),
                                      })
                 tax_vals.append((0, 0, tax_elem))
             subTotal = float(getElementTag_data(detail_line.getElementsByTagName('SubTotal')))
@@ -1031,7 +1046,7 @@ def parser_xml_detail(self_doc, xml_doc):
                 'subtotal': subTotal,
                 'line_total_amount': montoTotalLinea,
                 'discount': montoTotal - subTotal,
-                'tax_net': montoTotalLinea - subTotal,
+                'tax_net': float_round(montoTotalLinea - subTotal, precision_digits=5),
                 'tax_lines_ids': tax_vals
                 }
             values_dict.append(values)

@@ -78,7 +78,7 @@ class FaeAccountInvoiceLine(models.Model):
     # x_exoneration_id = fields.Many2one('xpartner.exoneration', string='Exoneración', copy=False)
 
     @api.onchange('tax_ids')
-    def _onchange_tax(self):        
+    def _onchange_tax(self):
         move = self.move_id
         if not move.is_sale_document():
             return
@@ -254,7 +254,6 @@ class FaeAccountInvoice(models.Model):
             else:
                 inv.x_show_generate_xml_button = False
 
-
     @api.onchange('partner_id', 'company_id')
     def _get_economic_activities(self):
         for inv in self:
@@ -338,7 +337,7 @@ class FaeAccountInvoice(models.Model):
             raise UserError('Lo documentos de Exportación no pueden emitirse a clientes Exonerados')
         elif self.move_type.find('out_') == 0 and self.x_document_type == 'FEC':
             raise UserError('El tipo de documento "Factura Electrónica de Compra" no es válido en ventas')
-        elif self.x_document_type not in ('TE','FEE') and self.partner_id and not self.partner_id.vat:
+        elif self.x_document_type not in ('TE', 'ND', 'FEE') and self.partner_id and not self.partner_id.vat:
             raise UserError('Para el tipo de documento electrónico seleccionado, la persona debe tener registrado su número de identificación')
 
         if not self.x_reference_code_id and self.x_is_external_reference:
@@ -346,7 +345,7 @@ class FaeAccountInvoice(models.Model):
 
     @api.onchange('x_fae_incoming_doc_id')
     def _document_incoming_doc(self):
-        if self.move_type in ('in_invoice', 'in_refund'):
+        if self.is_purchase_document():
             if self.x_document_type == 'FEC':
                 self.x_fae_incoming_doc_id = None
             elif self.x_fae_incoming_doc_id:
@@ -445,7 +444,7 @@ class FaeAccountInvoice(models.Model):
     def compute_name_value(self):
         if self.is_invoice(include_receipts=True) and self.name == '/' \
               and (not self.x_document_type or (self.is_purchase_document() and not self.x_fae_incoming_doc_id)):
-            name = self._compute_name_value( self.company_id.id, self.move_type)
+            name = self._compute_name_value(self.company_id.id, self.move_type)
             if name:
                 self.name = name
         elif self.is_purchase_document() and self.x_fae_incoming_doc_id and self.name != self.x_fae_incoming_doc_id.issuer_sequence:
@@ -1081,6 +1080,14 @@ class FaeAccountInvoice(models.Model):
                 inv.message_post(subject='Note', message_type='notification'
                                 ,body=msg_body)
                 continue
+
+    # Este método re-escribir para cumplir requerimientos de los clientes
+    # El texto devuelto debe ser un elemento XML bien formado con nodo "OtroTexto" u "OtroContenido"
+    def xml_OtroTexto(self):
+        otro_texto = None
+        # if self.ref:
+        #     otro_texto = '<OtroTexto %s="%s">%s</OtroTexto>' % ('codigo', 'NumeroOrden', escape(self.ref))
+        return otro_texto
 
     def consulta_status_doc_enviado(self):
         if self.company_id.x_fae_mode != 'N':
