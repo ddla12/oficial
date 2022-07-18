@@ -36,6 +36,7 @@ class XPosReceipt(models.TransientModel):
     partner_id = fields.Many2one('res.partner', string='Customer')
     date = fields.Date(required=True, index=True, copy=False, default=fields.Date.context_today)
     moves_list = fields.One2many('xpos.receipt.line', 'receipt', string="Facturas")
+    cashier_session_id = fields.Char(string="Sesión del Cajero")
 
     @api.onchange('partner_id')
     def _onchange_partner_id(self):
@@ -65,12 +66,13 @@ class XPosReceipt(models.TransientModel):
         if len(moves_list) <= 0:
             raise Warning('Debe seleccionar al menos una factura para poder crear el abono.')
 
-        pos_config = self.env['pos.config'].search([('company_id', '=', moves_list[0].move.company_id.id)], limit=1)
-        sale_session = pos_config.current_sale_session()
+        sale_session = self.env['pos.session'].search([('id', '=', int(self.cashier_session_id))], limit=1)
         if not sale_session:
-            raise Warning('No fue posible encontrar un session de ventas abierta')
+            raise Warning('No fue posible encontrar una session de ventas abierta')
 
+        pos_config = sale_session.config_id
         producto_abono = self.env['product.product'].search([('product_tmpl_id', '=', pos_config.x_product_receipt.id)], limit=1)
+
         if not producto_abono:
             raise ValidationError('No han definido en el punto de venta el producto para abono a facturas de crédito. Ver configuración del POS')
         if not sale_session.config_id.x_journal_receipt:
@@ -84,7 +86,6 @@ class XPosReceipt(models.TransientModel):
                 'full_product_name': ('Abono a Factura: ' + move.move.name) or '',
                 'product_id': producto_abono.id,
                 'x_move_receipt': move.move.id,
-                'price_unit': 0,
                 'qty': 1,
                 'price_unit': move.monto_receipt,
                 'price_subtotal': move.monto_receipt,

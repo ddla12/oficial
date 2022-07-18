@@ -18,6 +18,10 @@ odoo.define('pos_extensionfe.pos_button_receipt', function (require) {
 //            console.log('o_insert_receipt')
             var self = this;
             var state = self.model.get(self.handle, {raw: true});
+            var data = this.controlPanelProps.action._originalAction;
+            var arr = data.split("cashier_session_id")[1];
+            var cashier_session_id = arr.split("},")[0].split(":")[1];
+
             return self.do_action({
                 name: 'Abono a Crédito',
                 type: 'ir.actions.act_window',
@@ -26,6 +30,7 @@ odoo.define('pos_extensionfe.pos_button_receipt', function (require) {
                 views: [[false, 'form']],
                 view_type: 'form',
                 view_mode: 'form',
+                context: {'default_cashier_session_id': cashier_session_id},
                 flags: {'form': {'action_buttons':true, 'options':{'mode': 'edit'}}}
             });
         }
