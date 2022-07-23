@@ -30,6 +30,7 @@
         'report/pos_session_report.xml',
         'report/pos_set_express_report.xml',
         'report/pos_order_ticket_report.xml',
+        'report/pos_order_invoice.xml',        
         # 'report/pos_sale_report_inherit.xml',
         'report/sales_summary_report.xml',
         'data/mail_fae_pos_order_template.xml',
