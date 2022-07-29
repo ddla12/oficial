@@ -4,7 +4,7 @@
     'summary':
         """
         Hace que la tranferencia internas pueda aceptar diarios de tipo cash. 
-        Adem·s, genera el movimiento de entrada de forma autom·tica.
+        Adem√°s, genera el movimiento de entrada de forma autom√°tica.
         """,
     'version': '14.0',
     'category': 'Extra Tools',
