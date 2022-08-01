@@ -325,6 +325,15 @@
                             </t>
                         </div>
                     </div>
+
+                    <!-- footer -->
+                    <div class="footer" style="padding:2px 2px 2px 2px; border-top: 1px solid #dee2e6">
+                        <t t-if="o.x_move_type in ('refund', 'invoice')">
+                            <p class="text-center">
+                                Autorizada mediante resolución Nº DGT-R-033-2019 del 20 de junio del 2019
+                            </p>
+                        </t>
+                    </div>
                 </div>
             </t>
         </t>
