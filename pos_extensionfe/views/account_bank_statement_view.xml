@@ -7,9 +7,11 @@
             <field name="inherit_id" ref="account.view_account_bnk_stmt_cashbox"/>
             <field name="priority" eval="8"/>
             <field name="arch" type="xml">
-                <xpath expr="//field[@name='cashbox_lines_ids']//tree//field[@name='coin_value']" position="after">
-                    <field name="x_currency_id" width="15%"/>
-                    <field name="x_cr_rate_selling" width="15%" readonly="1"/>
+                <xpath expr="//field[@name='cashbox_lines_ids']//tree//field[@name='coin_value']" position="replace">
+                    <field name="coin_value" widget="monetary" options="{'currency_field': 'x_currency_id'}"/>
+                    <field name="x_currency_id" width="10%" options="{'no_open': True, 'no_create': True}"/>
+                    <field name="x_payment_amount" width="15%" readonly="1"/>
+                    <field name="x_exchange_rate" width="15%" readonly="1" force_save="1"/>
                 </xpath>
             </field>
         </record>

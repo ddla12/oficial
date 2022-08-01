@@ -26,6 +26,7 @@
         'views/pos_orders_views.xml',
         'views/sale_order_views.xml',
         'views/pos_session_views.xml',
+        'views/pos_currency_rate.xml',
         'views/account_bank_statement_view.xml',
         'report/pos_session_report.xml',
         'report/pos_set_express_report.xml',

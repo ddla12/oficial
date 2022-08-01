@@ -8,6 +8,11 @@
                 <field name="payment_date" position="after">
                     <field name="x_sequence" />
                 </field>
+                <field name="pos_order_id" position="after">
+                    <field name="x_currency_id" />
+                    <field name="x_currency_amount" string="Monto pago" widget="monetary" options="{'currency_field': 'x_currency_id'}"/>
+                    <field name="x_exchange_rate"  digits="[8,2]" />
+                </field>
             </field>
         </record>
 </odoo>

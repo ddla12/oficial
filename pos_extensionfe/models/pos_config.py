@@ -71,6 +71,11 @@ class POSConfigInherit(models.Model):
 
     def action_select_cashier(self):
         self.ensure_one()
+        # self.env.company.currency_id.symbol
+        currency_rate_expired = self.env['res.currency'].search([('x_exchange_type', '!=', False), ('x_end_date', '<', fields.Date.today())])
+        for rec in currency_rate_expired:
+            raise UserError(('El tipo de cambio cambio de la moneda %s está vencido.\n' +
+                            'Debe actualizar el tipo de cambio para abrir la caja') % rec.name)
         return {
             'name': 'Seleccionar Cajero',
             'type': 'ir.actions.act_window',

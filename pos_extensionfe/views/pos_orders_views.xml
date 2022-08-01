@@ -198,6 +198,22 @@
                     <field name="x_amount_untaxed" widget="monetary" />
                 </field>
 
+                <!-- Pagos -->
+                <xpath expr="//notebook/page[@name='payments']/field/tree/field[@name='payment_method_id']" position="after">
+                    <field name="x_currency_id" />
+                    <field name="x_currency_amount" widget="monetary" options="{'currency_field': 'x_currency_id'}"/>
+                    <field name="x_exchange_rate"  digits="[8,2]" />
+                </xpath>
+
+                <!--                <xpath expr="//notebook/page[@name='payments']/field/tree" position="attributes">-->
+<!--                    <attribute name="delete">0</attribute>-->
+<!--                </xpath>-->
+<!--                <xpath expr="//notebook/page[@name='payments']/field/tree" position="inside">-->
+<!--                    <button name="unlink" icon="fa-trash" type="object" string="Delete" -->
+<!--                                           attrs="{'invisible': [('state', '!=', 'draft')]}"/>-->
+<!--                </xpath>-->
+
+                <!-- notes -->
                 <xpath expr="//notebook/page[@name='notes']" position="after">
                     <page name="fae_info" string="FAE Information" attrs="{'invisible':[('x_move_type','=','receipt')]}">
                         <group col="4">

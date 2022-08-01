@@ -87,26 +87,46 @@
                                     </th>
                                 </tr>
                                 <tr>
-                                    <th style="width:320px;">Starting Balance</th>
+                                    <th style="width:320px;">Saldo Inicial</th>
                                     <td class="text-right"><span t-esc="'{:,.2f}'.format(session.cash_register_balance_start)"/></td>
                                 </tr>
                                 <tr>
-                                    <th>Ending Balance</th>
+                                    <th style="width:320px;">Cash payments</th>
+                                    <td class="text-right"><span t-esc="'{:,.2f}'.format(session.x_cash_register_total_cash_payments)"/></td>
+                                </tr>
+                                <tr>
+                                    <th style="width:320px;">Cash in/out</th>
+                                    <td class="text-right"><span t-esc="'{:,.2f}'.format(session.x_cash_register_cashier_moves)"/></td>
+                                </tr>
+                                <t t-if="session.state in ('opening_control', 'closed')">
+                                    <tr>
+                                        <th>Esperado</th>
+                                        <td class="text-right"><span t-esc="'{:,.2f}'.format(session.cash_real_expected)"/></td>
+                                    </tr>
+                                </t>
+                                <t t-if="session.state != 'closed'">
+                                    <tr>
+                                        <th>Esperado en efectivo</th>
+                                        <td class="text-right"><span t-esc="'{:,.2f}'.format(session.cash_register_balance_end)"/></td>
+                                    </tr>
+                                </t>
+                                <tr>
+                                    <th>Actual en Caja</th>
                                     <td class="text-right"><span t-esc="'{:,.2f}'.format(session.cash_register_balance_end_real)"/></td>
                                 </tr>
-                                <tr>
-                                    <th>Total Cash Transaction</th>
-                                    <td class="text-right"><span t-esc="'{:,.2f}'.format(session.cash_register_total_entry_encoding)"/></td>
-                                </tr>
-                                <tr>
-                                    <th>Theoretical Closing Balance</th>
-                                    <td class="text-right"><span t-esc="'{:,.2f}'.format(session.cash_register_balance_end)"/></td>
-                                </tr>
-                                <tr>
-                                    <th>Difference</th>
-                                    <!-- <td class="text-right"><span t-esc="'{:,.2f}'.format(session.cash_register_difference)"/></td> -->
-                                    <td class="text-right"><span t-esc="'{:,.2f}'.format(session.cash_real_difference)"/></td>
-                                </tr>
+                                <t t-if="session.state == 'closed'">
+                                    <tr>
+                                        <th>Diferencia</th>
+                                        <td class="text-right"><span t-esc="'{:,.2f}'.format(session.cash_real_difference)"/></td>
+                                    </tr>
+                                </t>
+                                <t t-if="session.state == 'closing_control'">
+                                    <tr>
+                                        <th>Before Closing Difference</th>
+                                         <td class="text-right"><span t-esc="'{:,.2f}'.format(session.cash_register_difference)"/></td>
+                                    </tr>
+                                </t>
+
                             </thead>
                         </table>
 
@@ -115,31 +135,29 @@
                         <table class="table table-sm o_main_table">
                             <thead>
                                 <tr>
-                                    <th colspan="4" style="background-color:#D3D3D3;text-align:center;">
+                                    <th colspan="5" style="background-color:#D3D3D3;text-align:center;">
                                         <h4>Payment Details</h4>
                                     </th>
                                 </tr>
                                 <tr>
                                     <th>Payment Method</th>
+                                    <th></th>
                                     <th class="text-right">Total Orders</th>
+                                    <th class="text-right">Monto Pagado</th>
                                     <th class="text-right">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <t t-foreach="session.payment_method_ids" t-as="payment_method_id">
-                                    <t t-set="payments_total" t-value="0"/>
-                                    <t t-set="payments_counter" t-value="0"/>
-
-                                    <t t-set="pos_payments" t-value="request.env['pos.payment'].search([('payment_method_id', '=', payment_method_id.id), ('session_id', '=', session.id)])"/>
-
-                                    <t t-foreach="pos_payments" t-as="payment">
-                                        <t t-set="payments_total" t-value="payments_total + payment.amount"/>
-                                        <t t-set="payments_counter" t-value="payments_counter + 1"/>
-                                    </t>
+                                <t t-foreach="session.get_payments_by_method()" t-as="payments_by_method">
                                     <tr>
-                                        <td><span t-esc="payment_method_id.name"/></td>
-                                        <td class="text-right"><span t-esc="payments_counter"/></td>
-                                        <td class="text-right"><span t-esc="'{:,.2f}'.format(payments_total)"/></td>
+                                        <td><span t-esc="payments_by_method['currency_name']"/></td>
+                                        <td><span t-esc="payments_by_method['total_by_currency']"/></td>
+                                        <td class="text-right"><span t-esc="payments_by_method['payments_counter']"/></td>
+                                        <td class="text-right"><span class="text-nowrap" t-esc="payments_by_method['symbol']"/><span t-esc="'{:,.2f}'.format(payments_by_method['x_currency_amount_total'])"/></td>
+                                        <td class="text-right">
+                                            <span class="text-nowrap" t-esc="session.config_id.company_id.currency_id.symbol"/>
+                                            <span t-esc="'{:,.2f}'.format(payments_by_method['payments_total'])"/>
+                                        </td>
                                     </tr>
                                 </t>
                             </tbody>
@@ -181,7 +199,7 @@
                             <table class="table table-sm o_main_table">
                                 <thead>
                                     <tr>
-                                        <th colspan="5" style="background-color:#D3D3D3;text-align:center;">
+                                        <th colspan="6" style="background-color:#D3D3D3;text-align:center;">
                                             <h4>Cash</h4>
                                         </th>
                                     </tr>
@@ -190,20 +208,79 @@
                                         <th class="text-right">Valor</th>
                                         <th class="text-right">Tipo Moneda</th>
                                         <th class="text-right">Tasa Cambio</th>
+                                        <th class="text-right">Monto Pago</th>
                                         <th class="text-right">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <t t-set="cashbox_lines" t-value="request.env['account.cashbox.line'].search([('cashbox_id', '=', session.x_cashbox_id.id)], order='x_currency_id asc')"/>
+                                    <t t-set="x_currency_id" t-value="0" />
+                                    <t t-set="x_currency_id_name" t-value="" />
+                                    <t t-set="x_currency_id_symbol" t-value="" />
+                                    <t t-set="total_x_currency_id_payment_amount" t-value="0" />
+                                    <t t-set="total_x_currency_id_subtotal" t-value="0" />
+                                    <t t-set="total_payment_amount" t-value="0" />
+                                    <t t-set="total_subtotal" t-value="0" />
+
                                     <t t-foreach="cashbox_lines" t-as="cashbox_line">
-                                        <tr>
-                                            <td><span t-esc="cashbox_line.number"/></td>
-                                            <td class="text-right"><span t-esc="cashbox_line.coin_value"/></td>
-                                            <td class="text-right"><span t-esc="cashbox_line.x_currency_id.name"/></td>
-                                            <td class="text-right"><span t-esc="'{:,.2f}'.format(cashbox_line.x_rate)"/></td>
-                                            <td class="text-right"><span t-esc="'{:,.2f}'.format(cashbox_line.subtotal)"/></td>
-                                        </tr>
+                                        <t t-if="cashbox_line.subtotal > 0">
+                                            <t t-if="x_currency_id == 0">
+                                                <t t-set="x_currency_id" t-value="int(cashbox_line.x_currency_id.id)" />
+                                                <t t-set="x_currency_id_name" t-value="cashbox_line.x_currency_id.name" />
+                                                <t t-set="x_currency_id_symbol" t-value="cashbox_line.x_currency_id.symbol" />
+                                            </t>
+                                            <t t-if="x_currency_id != int(cashbox_line.x_currency_id.id)">
+                                                <tr>
+                                                    <td></td>
+                                                    <td class="text-right"></td>
+                                                    <td class="text-right"><span>Moneda: <span t-esc="x_currency_id_name"/></span></td>
+                                                    <td class="text-right"><span> Totales: </span></td>
+                                                    <td class="text-right"><span class="text-nowrap" t-esc="x_currency_id_symbol"/><span t-esc="'{:,.2f}'.format(total_x_currency_id_payment_amount)"/></td>
+                                                    <td class="text-right">
+                                                        <span class="text-nowrap" t-esc="session.config_id.company_id.currency_id.symbol"/>
+                                                        <span t-esc="'{:,.2f}'.format(total_x_currency_id_subtotal)"/>
+                                                    </td>
+                                                </tr>
+                                                <t t-set="x_currency_id" t-value="int(cashbox_line.x_currency_id.id)" />
+                                                <t t-set="x_currency_id_name" t-value="cashbox_line.x_currency_id.name" />
+                                                <t t-set="total_x_currency_id_payment_amount" t-value="0" />
+                                                <t t-set="total_x_currency_id_subtotal" t-value="0" />
+                                            </t>
+                                            <t t-set="total_x_currency_id_payment_amount"
+                                               t-value="total_x_currency_id_payment_amount + cashbox_line.x_payment_amount" />
+                                            <t t-set="total_x_currency_id_subtotal"
+                                               t-value="total_x_currency_id_subtotal + cashbox_line.subtotal" />
+                                            <t t-set="total_payment_amount"
+                                               t-value="total_payment_amount + cashbox_line.x_payment_amount" />
+                                            <t t-set="total_subtotal"
+                                               t-value="total_subtotal + cashbox_line.subtotal" />
+                                            <t t-set="x_currency_id_name" t-value="cashbox_line.x_currency_id.name" />
+                                            <t t-set="x_currency_id_symbol" t-value="cashbox_line.x_currency_id.symbol" />
+                                            <tr>
+                                                <td><span t-esc="cashbox_line.number"/></td>
+                                                <td class="text-right"><span t-esc="cashbox_line.coin_value"/></td>
+                                                <td class="text-right"><span t-esc="cashbox_line.x_currency_id.name"/></td>
+                                                <td class="text-right"><span t-esc="'{:,.2f}'.format(cashbox_line.x_exchange_rate)"/></td>
+                                                <td class="text-right"><span class="text-nowrap" t-esc="x_currency_id_symbol"/><span t-esc="'{:,.2f}'.format(cashbox_line.x_payment_amount)"/></td>
+                                                <td class="text-right">
+                                                    <span class="text-nowrap" t-esc="session.config_id.company_id.currency_id.symbol"/>
+                                                    <span t-esc="'{:,.2f}'.format(cashbox_line.subtotal)"/>
+                                                </td>
+                                            </tr>
+                                        </t>
                                     </t>
+                                    <tr>
+                                        <td></td>
+                                        <td class="text-right"></td>
+                                        <td class="text-right"><span>Moneda: <span t-esc="x_currency_id_name"/></span></td>
+                                        <td class="text-right"><span> Totales: </span></td>
+                                        <td class="text-right"><span class="text-nowrap" t-esc="x_currency_id_symbol"/><span t-esc="'{:,.2f}'.format(total_x_currency_id_payment_amount)"/></td>
+                                        <td class="text-right">
+                                            <span class="text-nowrap" t-esc="session.config_id.company_id.currency_id.symbol"/>
+                                            <span t-esc="'{:,.2f}'.format(total_x_currency_id_subtotal)"/>
+                                        </td>
+                                    </tr>
+
                                 </tbody>
                             </table>
                         </t>

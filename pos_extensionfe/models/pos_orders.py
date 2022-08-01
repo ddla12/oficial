@@ -649,13 +649,51 @@ class PosOrderInherit(models.Model):
             raise UserError('No pudo obtener el consecutivo para el tipo documento: %s' % (self.x_document_type) )  
 
         if not sequence:
-            raise UserError('No han definido el consecutivo para el Punto de Venta: %s' % (self.session_id.config_id.name) )  
+            raise UserError('No han definido el consecutivo para el Punto de Venta: %s' % (self.session_id.config_id.name) )
+
+        # Controla que no a haya saltos de consecutivo
+        if sequence.number_next_actual >= 5:
+            consecutivo = sequence.get_next_char(sequence.number_next_actual - 1)
+            prev_x_sequence = fae_utiles.gen_consecutivo(self.x_document_type, consecutivo, sucursal, terminal)
+            consecutivo = sequence.get_next_char(sequence.number_next_actual - 20)
+            from_x_sequence = fae_utiles.gen_consecutivo(self.x_document_type, consecutivo, sucursal, terminal)
+
+            sql_cmd = """
+                 SELECT x_sequence
+                 FROM account_move
+                 WHERE x_sequence >= '{from_seq}'
+                   AND x_sequence <= '{to_seq}'
+                   AND left(x_sequence,10) =  '{pref_seq}'
+                   AND x_document_type = '{doc_type}'
+                   AND company_id = {company_id}
+                 """.format(from_seq=from_x_sequence, to_seq=prev_x_sequence, pref_seq=from_x_sequence[:10]
+                            , doc_type=self.x_document_type, company_id=self.company_id.id)
+            sql_cmd = sql_cmd + """
+                UNION
+                SELECT x_sequence
+                FROM pos_order
+                WHERE x_sequence >= '{from_seq}'
+                  AND x_sequence <= '{to_seq}'
+                  AND left(x_sequence,10) =  '{pref_seq}'
+                  AND x_document_type = '{doc_type}'
+                  AND company_id = {company_id}
+                """.format(from_seq=from_x_sequence, to_seq=prev_x_sequence, pref_seq=from_x_sequence[:10]
+                           , doc_type=self.x_document_type, company_id=self.company_id.id)
+            sql_cmd = sql_cmd + """
+                ORDER BY 1 DESC
+                """
+            self._cr.execute(sql_cmd)
+            res = self._cr.dictfetchone()
+            if res and prev_x_sequence != res.get('x_sequence'):
+                raise ValidationError(
+                    'Para el tipo de documento: %s se detectó un salto de numeración. No existe el número anterior: %s' % (self.x_document_type, prev_x_sequence))
 
         if not self.x_issue_date:
             dt_cr = datetime.datetime.today().astimezone(pytz.timezone('America/Costa_Rica'))
             self.x_issue_date = dt_cr.strftime('%Y-%m-%dT%H:%M:%S')
 
         consecutivo = sequence.next_by_id()
+
         jdata = fae_utiles.gen_clave_hacienda(self, self.x_document_type, consecutivo, sucursal, terminal)
         self.x_electronic_code50 = jdata.get('clave_hacienda')
         self.x_sequence = jdata.get('consecutivo')
@@ -821,6 +859,7 @@ class PosOrderInherit(models.Model):
         if self.partner_id:
             self.x_name_to_print = self.partner_id.name
         self.x_is_partial = True
+
         self.action_pos_order_paid()
         self._create_order_picking()
 

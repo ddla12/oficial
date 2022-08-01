@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import fields, models, api, _ 
-from odoo.tools import float_is_zero, float_compare,  DEFAULT_SERVER_DATETIME_FORMAT, DEFAULT_SERVER_DATE_FORMAT
+from odoo.tools import float_round, float_is_zero, float_compare,  DEFAULT_SERVER_DATETIME_FORMAT, DEFAULT_SERVER_DATE_FORMAT
 
 from odoo.exceptions import Warning, RedirectWarning, UserError, ValidationError
 
@@ -15,6 +15,9 @@ class PosPaymentInherit(models.Model):
     _inherit = "pos.payment"
 
     x_sequence = fields.Char(string="Núm.Consecutivo", related='pos_order_id.x_sequence')
+    x_currency_id = fields.Many2one('res.currency', string='Moneda de Pago', copy=False )
+    x_currency_amount = fields.Monetary(digits=0, string='Pago Recibido', copy=False)
+    x_exchange_rate = fields.Float(string='Tipo de Cambio', copy=False)
 
 
 class PosPaymentMethod(models.Model):
@@ -50,7 +53,53 @@ class PosMakePayment(models.TransientModel):
     amount = fields.Float(digits=0, required=True, default=_default_amount)
     x_payment_return = fields.Float(string='Vuelto', digits=0)   # El vuelto
     x_order_total = fields.Float(string='Order Total', default=_default_order_total)
+    x_currency_id = fields.Many2one('res.currency', default=lambda self: self.env.company.currency_id,
+                                    string='Moneda de Cambio', required="1",
+                                    domain="[('active', '=', True)]")
+                                    # domain="[('active', '=', True), '|',()]")
+                                    # domain = lambda self: [('active', '=', True), '|', ('x_exchange_type', '!=', False), ('id', '=', self.env.company.currency_id)])
+    x_exchange_rate = fields.Float(string='Tipo de Cambio', copy=False)
+    x_currency_amount = fields.Monetary(digits=0, string='Importe de la Moneda',
+                                        required=True,
+                                        default=_default_amount)
+    x_pos_currency_id = fields.Many2one(related='config_id.company_id.currency_id')
 
+    @api.onchange('x_currency_id')
+    def _onchange_x_currency_id(self):
+        if self.x_currency_id == self.env.company.currency_id:
+            self.x_exchange_rate = 1
+            self.x_currency_amount = self._default_amount()
+        elif self.x_currency_id.x_exchange_rate > 0:
+            self.x_exchange_rate = self.x_currency_id.x_exchange_rate
+            self.x_currency_amount = float_round(self._default_amount() / self.x_exchange_rate, precision_digits=2)
+        else:
+            self.x_currency_amount = None
+        # recalcula el monto en colones
+        self._onchange_x_currency_amount()
+
+        # determina el método de pago de efectivo correspondiente con la moneda
+        if self.payment_method_id.is_cash_count:
+            config = self._default_config()
+            payment_method_list = self.env['pos.payment.method'].search(
+                [('id', 'in', config.payment_method_ids.ids),
+                 ('company_id', '=', self.env.company.id),
+                 ('is_cash_count', '=', True)])
+            pos_payment_method_id = payment_method_list.filtered(lambda r: r.receivable_account_id.currency_id.id == self.x_currency_id.id)
+            if not pos_payment_method_id:
+                # si no encontro un Efectivo con cuenta contable de moneda igual a la moneda de pago, entonces el efectivo sin moneda
+                pos_payment_method_id = payment_method_list.filtered(lambda r: not r.receivable_account_id.currency_id)
+            if pos_payment_method_id:
+                self.payment_method_id = pos_payment_method_id.id
+
+    @api.onchange('x_currency_amount')
+    def _onchange_x_currency_amount(self):
+        if self.x_currency_amount > 0 and self.x_currency_id:
+            if self.x_exchange_rate > 0:
+                self.amount = float_round(self.x_currency_amount * self.x_exchange_rate, precision_digits=2)
+            elif not (self.x_exchange_rate or 0):
+                raise ValidationError('El tipo de cambio no puede ser 0')
+            else:
+                self.amount = self.x_currency_amount
 
     @api.onchange('amount')
     def _onchange_xpos_amount_payment(self):
@@ -58,12 +107,10 @@ class PosMakePayment(models.TransientModel):
         if self.amount < 0:
             self.x_payment_return = abs(self.amount)
 
-
     @api.onchange('x_payment_return')
     def _onchange_amount_payment_return(self):
         if self.x_payment_return > 0:
             self.amount = -abs(self.x_payment_return)
-
 
     def check(self):
         """Check the order:
@@ -75,7 +122,6 @@ class PosMakePayment(models.TransientModel):
         order = self.env['pos.order'].browse(self.env.context.get('active_id', False))
         currency = order.currency_id
         init_data = self.read()[0]
-        
         current_session = order.current_cashier_session()
 
         payment_amount = order._get_rounded_amount(init_data['amount'])        
@@ -117,6 +163,9 @@ class PosMakePayment(models.TransientModel):
                 'amount': payment_net,
                 'name': init_data['payment_name'],
                 'payment_method_id': init_data['payment_method_id'][0],
+                'x_currency_id': init_data['x_currency_id'][0],
+                'x_currency_amount': init_data['x_currency_amount'],
+                'x_exchange_rate': init_data['x_exchange_rate'],
             })
         
         # si la orden está pagada totalmente termina, sino vuelve a llamar a pagos
@@ -125,7 +174,6 @@ class PosMakePayment(models.TransientModel):
             return order.process_pos_order_completed()
 
         return self.launch_payment()
-
 
     def launch_payment(self):
         amount = self._default_amount()

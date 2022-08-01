@@ -239,3 +239,54 @@ class PosSessionInherit(models.Model):
             'MoveLine':                            MoveLine
         })
         return data
+
+    def get_payments_by_method(self):
+        for session in self:
+            vals = []
+
+            pos_payments = self.env['pos.payment'].search([('session_id', '=', session.id)])
+            currency_ids = pos_payments.x_currency_id.ids
+
+            for curr_id in currency_ids:
+                currency = self.env['res.currency'].search([('id', '=', curr_id)])
+                payments_total_by_currency = 0
+                x_currency_amount_total_by_currency = 0
+                payments_counter_by_currency = 0
+
+                for payment_method in session.payment_method_ids:
+                    payments_currency = pos_payments.filtered(lambda p: p.x_currency_id.id == curr_id
+                                                                        and p.payment_method_id.id == payment_method.id)\
+                                                                        .sorted(key=lambda p: p.id)
+                    payments_total = 0
+                    x_currency_amount_total = 0
+                    payments_counter = 0
+                    for payment in payments_currency:
+                        payments_total += payment.amount
+                        x_currency_amount_total += payment.x_currency_amount
+                        payments_counter += 1
+
+                    if payments_total != 0:
+                        vals.append({
+                            'currency_name': payment_method.name,
+                            'symbol': currency.symbol,
+                            'total_by_currency': '',
+                            'payments_counter': payments_counter,
+                            'payments_total': payments_total,
+                            'x_currency_amount_total': x_currency_amount_total,
+                                   })
+
+                        payments_total_by_currency += payments_total
+                        x_currency_amount_total_by_currency += x_currency_amount_total
+                        payments_counter_by_currency += payments_counter
+
+                if payments_total_by_currency != 0:
+                    vals.append({
+                        'currency_name': '',
+                        'symbol': currency.symbol,
+                        'total_by_currency': 'Moneda: ' + currency.name + '       Totales: ',
+                        'payments_counter': payments_counter_by_currency,
+                        'payments_total': payments_total_by_currency,
+                        'x_currency_amount_total': x_currency_amount_total_by_currency,
+                    })
+
+            return vals
