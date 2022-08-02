@@ -283,16 +283,21 @@
                             <!-- Detalle del Pago -->
                             <t t-if="o.payment_ids" >
                                 <br/>
-                                <table class="tble" style="width:65%">
+                                <table class="tble" style="width:94%; font-size:18px">
                                     <thead>
                                         <tr>
-                                            <th width="70%">Forma de pago</th>
-                                            <th width="30%" class="text-right">Monto</th>
+                                            <th width="38%">Forma de pago</th>
+                                            <th width="33%" class="text-right">Recibido</th>
+                                            <th width="29%" class="text-right">Monto</th>
                                         </tr>
                                     </thead>
                                     <tbody style="border-top: 1px solid #dee2e6">
                                         <tr t-foreach="o.payment_ids.filtered(lambda x: x.amount &gt; 0)" t-as="p">
                                             <td><span t-esc="p.payment_method_id.name"/> </td>
+                                            <td class="text-right">
+                                                <span class="text-nowrap" t-esc="p.x_currency_id.symbol"/>
+                                                <span t-esc="'{:,.2f}'.format(p.x_currency_amount)"/>
+                                            </td>
                                             <td class="text-right"><span t-esc="'{:,.2f}'.format(p.amount)"/> </td>
                                         </tr>
                                     </tbody>

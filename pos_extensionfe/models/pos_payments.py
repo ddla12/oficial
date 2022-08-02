@@ -80,16 +80,17 @@ class PosMakePayment(models.TransientModel):
         # determina el método de pago de efectivo correspondiente con la moneda
         if self.payment_method_id.is_cash_count:
             config = self._default_config()
+            # Algunos clientes configuran varios metodos de pagos de tipo cash, entonces se ordenan por id para que cash original quede de primero
             payment_method_list = self.env['pos.payment.method'].search(
                 [('id', 'in', config.payment_method_ids.ids),
                  ('company_id', '=', self.env.company.id),
-                 ('is_cash_count', '=', True)])
+                 ('is_cash_count', '=', True)], order='id')
             pos_payment_method_id = payment_method_list.filtered(lambda r: r.receivable_account_id.currency_id.id == self.x_currency_id.id)
             if not pos_payment_method_id:
                 # si no encontro un Efectivo con cuenta contable de moneda igual a la moneda de pago, entonces el efectivo sin moneda
                 pos_payment_method_id = payment_method_list.filtered(lambda r: not r.receivable_account_id.currency_id)
             if pos_payment_method_id:
-                _logger.info('>> pos_payment:  pos_payument_method: %s', str(pos_payment_method_id))
+                # _logger.info('>> pos_payment:  pos_payument_method: %s', str(pos_payment_method_id))
                 self.payment_method_id = pos_payment_method_id[0].id
 
     @api.onchange('x_currency_amount')

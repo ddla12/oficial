@@ -37,11 +37,14 @@ class PosSessionInherit(models.Model):
     @api.depends('payment_method_ids', 'order_ids', 'cash_register_balance_start', 'cash_register_id')
     def _compute_cash_balance(self):
         for session in self:
-            cash_payment_method = session.payment_method_ids.filtered('is_cash_count')[:1]
             # session.x_cash_register_cashier_moves = sum( l.amount for l in session.line_ids)
             session.x_cash_register_cashier_moves = sum( session.cash_register_id.mapped('line_ids').filtered(lambda cash_io : cash_io.x_source).mapped('amount') )
-            if cash_payment_method:
-                total_cash_payment = sum(session.order_ids.mapped('payment_ids').filtered(lambda payment: payment.payment_method_id == cash_payment_method).mapped('amount'))
+            # cash_payment_method = session.payment_method_ids.filtered('is_cash_count')[:1]
+            cash_payment_method_ids = session.payment_method_ids.filtered('is_cash_count')
+            if cash_payment_method_ids:
+                total_cash_payment = 0.0
+                for cash_payment_method in cash_payment_method_ids:
+                    total_cash_payment += sum(session.order_ids.mapped('payment_ids').filtered(lambda payment: payment.payment_method_id == cash_payment_method).mapped('amount'))
                 session.cash_register_total_entry_encoding = session.cash_register_id.total_entry_encoding + (
                     0.0 if session.state == 'closed' else total_cash_payment
                 )
