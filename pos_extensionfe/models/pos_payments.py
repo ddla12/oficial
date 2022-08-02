@@ -85,10 +85,13 @@ class PosMakePayment(models.TransientModel):
                 [('id', 'in', config.payment_method_ids.ids),
                  ('company_id', '=', self.env.company.id),
                  ('is_cash_count', '=', True)], order='id')
-            pos_payment_method_id = payment_method_list.filtered(lambda r: r.receivable_account_id.currency_id.id == self.x_currency_id.id)
+            # se comento el siguiente linea, hasta que resolvamos lo de la cuenta
+            # pos_payment_method_id = payment_method_list.filtered(lambda r: r.receivable_account_id.currency_id.id == self.x_currency_id.id)
+            pos_payment_method_id = False if self.x_currency_id.name != 'USD' else payment_method_list.filtered(lambda r: '$US' in r.name.upper())
             if not pos_payment_method_id:
                 # si no encontro un Efectivo con cuenta contable de moneda igual a la moneda de pago, entonces el efectivo sin moneda
-                pos_payment_method_id = payment_method_list.filtered(lambda r: not r.receivable_account_id.currency_id)
+                # pos_payment_method_id = payment_method_list.filtered(lambda r: not r.receivable_account_id.currency_id)
+                pos_payment_method_id = payment_method_list.filtered(lambda r: '$US' not in r.name.upper())
             if pos_payment_method_id:
                 # _logger.info('>> pos_payment:  pos_payument_method: %s', str(pos_payment_method_id))
                 self.payment_method_id = pos_payment_method_id[0].id
