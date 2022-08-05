@@ -71,7 +71,7 @@ class PosSessionInherit(models.Model):
             )
         return True
 
-    # este procedimiento temporalmente
+    # comparar contra el original de odoo a ver si tiene cambios
     def action_pos_session_validate(self):
         if self.x_employee_id:
             # la sessión pertenece a un cajero
@@ -271,7 +271,9 @@ class PosSessionInherit(models.Model):
 
                     if payments_total != 0:
                         vals.append({
-                            'currency_name': payment_method.name,
+                            'tipo': 'payment',
+                            'payment_name': payment_method.name,
+                            'currency_name': currency.name,
                             'symbol': currency.symbol,
                             'total_by_currency': '',
                             'payments_counter': payments_counter,
@@ -285,12 +287,15 @@ class PosSessionInherit(models.Model):
 
                 if payments_total_by_currency != 0:
                     vals.append({
-                        'currency_name': '',
+                        'tipo': 'total',
+                        'payment_name': payment_method.name,
+                        'currency_name': currency.name,
                         'symbol': currency.symbol,
-                        'total_by_currency': 'Moneda: ' + currency.name + '       Totales: ',
+                        'total_by_currency': 'Totales:',
                         'payments_counter': payments_counter_by_currency,
                         'payments_total': payments_total_by_currency,
                         'x_currency_amount_total': x_currency_amount_total_by_currency,
                     })
 
             return vals
+

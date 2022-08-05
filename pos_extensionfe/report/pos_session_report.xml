@@ -132,7 +132,7 @@
 
                         <br/>
 
-                        <table class="table table-sm o_main_table">
+                        <table class="table table-sm o_main_table" style="font-size:16px">
                             <thead>
                                 <tr>
                                     <th colspan="5" style="background-color:#D3D3D3;text-align:center;">
@@ -140,23 +140,28 @@
                                     </th>
                                 </tr>
                                 <tr>
-                                    <th>Payment Method</th>
-                                    <th></th>
-                                    <th class="text-right">Total Orders</th>
-                                    <th class="text-right">Monto Pagado</th>
-                                    <th class="text-right">Amount</th>
+                                    <th width="34%">Payment Method</th>
+                                    <th width="6%"/>
+                                    <th width="10%" class="text-right">Orders</th>
+                                    <th width="20%" class="text-right">Monto Pagado</th>
+                                    <th width="28%" class="text-right">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <t t-foreach="session.get_payments_by_method()" t-as="payments_by_method">
+                                <t t-foreach="session.get_payments_by_method()" t-as="payment_rec">
                                     <tr>
-                                        <td><span t-esc="payments_by_method['currency_name']"/></td>
-                                        <td><span t-esc="payments_by_method['total_by_currency']"/></td>
-                                        <td class="text-right"><span t-esc="payments_by_method['payments_counter']"/></td>
-                                        <td class="text-right"><span class="text-nowrap" t-esc="payments_by_method['symbol']"/><span t-esc="'{:,.2f}'.format(payments_by_method['x_currency_amount_total'])"/></td>
+                                        <t t-if="payment_rec['tipo']=='payment'">
+                                            <td><span t-esc="payment_rec['payment_name']"/></td>
+                                            <td><span t-esc="payment_rec['currency_name']"/></td>
+                                        </t>
+                                        <t t-else="">
+                                            <td colspan="2" class="text-right"><span t-esc="payment_rec['total_by_currency']"/></td>
+                                        </t>
+                                        <td class="text-right"><span t-esc="payment_rec['payments_counter']"/></td>
+                                        <td class="text-right"><span class="text-nowrap" t-esc="payment_rec['symbol']"/><span t-esc="'{:,.2f}'.format(payment_rec['x_currency_amount_total'])"/></td>
                                         <td class="text-right">
                                             <span class="text-nowrap" t-esc="session.config_id.company_id.currency_id.symbol"/>
-                                            <span t-esc="'{:,.2f}'.format(payments_by_method['payments_total'])"/>
+                                            <span t-esc="'{:,.2f}'.format(payment_rec['payments_total'])"/>
                                         </td>
                                     </tr>
                                 </t>
@@ -165,7 +170,7 @@
 
                         <br/>
 
-                        <table class="table table-sm o_main_table">
+                        <table class="table table-sm o_main_table" style="font-size:16px">
                             <thead>
                                 <tr>
                                     <th colspan="4" style="background-color:#D3D3D3;text-align:center;">
@@ -196,7 +201,7 @@
                         </table>
                         <br/>
                         <t t-if="session.x_cashbox_id">
-                            <table class="table table-sm o_main_table">
+                            <table class="table table-sm o_main_table"  style="font-size:16px">
                                 <thead>
                                     <tr>
                                         <th colspan="6" style="background-color:#D3D3D3;text-align:center;">
@@ -204,12 +209,12 @@
                                         </th>
                                     </tr>
                                     <tr>
-                                        <th># Monedas/Billetes</th>
-                                        <th class="text-right">Valor</th>
-                                        <th class="text-right">Tipo Moneda</th>
-                                        <th class="text-right">Tasa Cambio</th>
-                                        <th class="text-right">Monto Pago</th>
-                                        <th class="text-right">Subtotal</th>
+                                        <th width="15%"># Monedas/Billetes</th>
+                                        <th width="15%" class="text-right">Valor</th>
+                                        <th width="7%" class="text-right">Moneda</th>
+                                        <th width="10%" class="text-right">Tasa Cambio</th>
+                                        <th width="20%" class="text-right">Monto Pago</th>
+                                        <th width="25%" class="text-right">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -231,10 +236,7 @@
                                             </t>
                                             <t t-if="x_currency_id != int(cashbox_line.x_currency_id.id)">
                                                 <tr>
-                                                    <td></td>
-                                                    <td class="text-right"></td>
-                                                    <td class="text-right"><span>Moneda: <span t-esc="x_currency_id_name"/></span></td>
-                                                    <td class="text-right"><span> Totales: </span></td>
+                                                    <td class="text-right" colspan="4"><span>Totales: </span></td>
                                                     <td class="text-right"><span class="text-nowrap" t-esc="x_currency_id_symbol"/><span t-esc="'{:,.2f}'.format(total_x_currency_id_payment_amount)"/></td>
                                                     <td class="text-right">
                                                         <span class="text-nowrap" t-esc="session.config_id.company_id.currency_id.symbol"/>
@@ -270,10 +272,7 @@
                                         </t>
                                     </t>
                                     <tr>
-                                        <td></td>
-                                        <td class="text-right"></td>
-                                        <td class="text-right"><span>Moneda: <span t-esc="x_currency_id_name"/></span></td>
-                                        <td class="text-right"><span> Totales: </span></td>
+                                        <td class="text-right" colspan="4"><span>Totales: </span></td>
                                         <td class="text-right"><span class="text-nowrap" t-esc="x_currency_id_symbol"/><span t-esc="'{:,.2f}'.format(total_x_currency_id_payment_amount)"/></td>
                                         <td class="text-right">
                                             <span class="text-nowrap" t-esc="session.config_id.company_id.currency_id.symbol"/>

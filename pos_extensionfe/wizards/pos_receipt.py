@@ -43,7 +43,7 @@ class XPosReceipt(models.TransientModel):
         self.ensure_one()
         orders = self.env['account.move'].search(
             [('partner_id', '=', self.partner_id.id), ('move_type', '=', 'out_invoice'), ('amount_residual', '>', 0)],
-            order='date desc')
+            order='date asc')
         vals = []
         self.moves_list = [[6, 0, []]]
 

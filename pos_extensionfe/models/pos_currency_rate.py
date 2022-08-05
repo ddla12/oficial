@@ -23,6 +23,14 @@ class xResCurrency(models.Model):
                                            'con un factor de redondeo de 5, el resultado será 685')
     x_exchange_rate = fields.Float(string='Tipo de Cambio', compute='_compute_x_exchange_rate')
     x_end_date = fields.Date(string='Rige hasta', copy=False)
+    x_currency_editable = fields.Boolean(compute='_compute_x_currency_editable', readonly=True)
+
+    def _compute_x_currency_editable(self):
+        for rec in self:
+            if self.env.user.has_group('point_of_sale.group_pos_manager'):
+                rec.x_currency_editable = True
+            else:
+                rec.x_currency_editable = False
 
     @api.onchange('x_exchange_type')
     def _onchange_x_exchange_type(self):
