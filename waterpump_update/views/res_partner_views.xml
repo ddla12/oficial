@@ -11,6 +11,9 @@
                     <xpath expr="//field[@name='vat']" position="after">
                         <field name="ref"/>
                     </xpath>
+                    <xpath expr="//field[@name='email']" position="replace">
+                        <field name="email" required="1" widget="email" context="{'gravatar_image': True}" />
+                    </xpath>
                 </data>
             </field>
         </record>
