@@ -21,20 +21,21 @@ class AccountPaymeny(models.Model):
 
     def action_post(self):
         res = super(AccountPaymeny, self).action_post()
-        if self.is_internal_transfer and not self.x_transfer_move:
-            paired_payment = self.copy(
-                {
-                    "journal_id": self.x_destination_journal_id.id,
-                    "x_destination_journal_id": self.journal_id.id,
-                    "payment_type": self.payment_type == "outbound"
-                                    and "inbound"
-                                    or "outbound",
-                    "move_id": None,
-                    "ref": self.ref,
-                    "date":self.date,
-                    "x_transfer_move": self.id,
-                }
-            )
-            paired_payment.move_id._post(soft=False)
-            self.x_transfer_move = paired_payment
+        for payment in self:
+            if payment.is_internal_transfer and not payment.x_transfer_move:
+                paired_payment = payment.copy(
+                    {
+                        "journal_id": payment.x_destination_journal_id.id,
+                        "x_destination_journal_id": payment.journal_id.id,
+                        "payment_type": payment.payment_type == "outbound"
+                                        and "inbound"
+                                        or "outbound",
+                        "move_id": None,
+                        "ref": payment.ref,
+                        "date":payment.date,
+                        "x_transfer_move": payment.id,
+                    }
+                )
+                paired_payment.move_id._post(soft=False)
+                payment.x_transfer_move = paired_payment
         return res
