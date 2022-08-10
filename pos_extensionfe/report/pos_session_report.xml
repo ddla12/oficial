@@ -151,7 +151,7 @@
                                 <t t-foreach="session.get_payments_by_method()" t-as="payment_rec">
                                     <tr>
                                         <t t-if="payment_rec['tipo']=='payment'">
-                                            <td><span t-esc="payment_rec['payment_name']"/></td>
+                                            <td><span t-esc="payment_rec['payment_name'] + '.'"/></td>
                                             <td><span t-esc="payment_rec['currency_name']"/></td>
                                         </t>
                                         <t t-else="">
