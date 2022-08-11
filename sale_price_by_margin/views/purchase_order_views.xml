@@ -7,7 +7,9 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='order_line']//tree//field[@name='price_unit']" position="after">
                 <field name="x_old_standard_price" readonly="1" optional="hide"/>
+                <field name="x_margin_first"  readonly="1" optional="hide"/>
                 <field name="x_margin_first_price" readonly="1" optional="hide"/>
+                <field name="x_margin_second" readonly="1" optional="hide"/>
                 <field name="x_margin_second_price" readonly="1" optional="hide"/>
             </xpath>
         </field>
