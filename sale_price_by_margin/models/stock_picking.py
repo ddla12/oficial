@@ -10,16 +10,13 @@ _logger = logging.getLogger(__name__)
 class StockPicking(models.Model):
     _inherit = "stock.picking"
 
-    def _calculate_margin(self, move, price_list, margin, round_factor):
+    def _calculate_margin(self, move, price_list, margin_price):
         msg = ''
-        new_price = move.purchase_line_id.price_unit * (1 + margin / 100)
+        new_price = margin_price
         po_line = move.purchase_line_id
         if po_line.currency_id != price_list.currency_id:
             new_price = po_line.currency_id._convert(new_price, price_list.currency_id, po_line.company_id, fields.Date.context_today(self))
-        if round_factor > 0:
-            cociente, residuo = divmod(new_price, round_factor)
-            if residuo > 0:
-                new_price = (cociente * round_factor) + round_factor
+
         item = price_list.item_ids.filtered(
                 lambda r: (r.product_id == move.product_id) or (r.product_tmpl_id == move.product_tmpl_id and r.product_id == move.product_id))
         if item and item.fixed_price != new_price:
@@ -54,9 +51,9 @@ class StockPicking(models.Model):
                 for move in move_ids:
                     product = self.env['product.template'].search([('id', '=', move.product_tmpl_id.id)], limit=1)
                     if product.x_margin_first:
-                        msg = msg + self._calculate_margin(move, margin_first_pricelist_id, product.x_margin_first, product.x_round_factor)
+                        msg = msg + self._calculate_margin(move, margin_first_pricelist_id, move.purchase_line_id.x_margin_first_price)
                     if product.x_margin_second:
-                        msg = msg + self._calculate_margin(move, margin_second_pricelist_id, product.x_margin_second, product.x_round_factor)
+                        msg = msg + self._calculate_margin(move, margin_second_pricelist_id, move.purchase_line_id.x_margin_second_price)
                 if msg:
                     msg = 'Se actualizó los siguientes precios de los siguientes artículos:\n '+msg
                     self.purchase_id.message_post(body=msg)

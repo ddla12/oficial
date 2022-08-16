@@ -12,7 +12,7 @@
     'website': "http://www.prointeccr.com",
     'license': 'AGPL-3',
 
-    'depends': ['base', 'stock', 'sale'],
+    'depends': ['base', 'stock', 'sale', 'purchase_discount'],
     'data': [
         'views/res_config_settings_views.xml',
         'views/product_views.xml',
