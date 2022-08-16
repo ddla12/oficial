@@ -16,7 +16,7 @@
     'category': 'Uncategorized',
     'version': '0.1',
 
-    'depends': ['base', 'account', 'contacts'],
+    'depends': ['base', 'account', 'contacts', 'FAE_app'],
 
     # always loaded
     'data': [
