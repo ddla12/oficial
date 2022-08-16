@@ -22,8 +22,17 @@
                                 <field name="margin_first_pricelist_id"/>
                             </div>
                             <div class="row">
-                                <label string="Lista de Precio Márgen 2" for="margin_second_pricelist_id" class="col-lg-3 o_light_label"/>
+                                <label string="Lista Márgen2" for="margin_second_pricelist_id" class="col-lg-3 o_light_label"/>
                                 <field name="margin_second_pricelist_id"/>
+                            </div>
+                        </div>
+                        <div class="o_setting_left_pane mt16">
+                            <field name="x_apply_discount_margin"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="x_apply_discount_margin"/>
+                            <div class="text-muted" id="x_apply_discount_margin">
+                                Indica si se aplica el descuento al calcular el precio basado en los margenes correspondientes
                             </div>
                         </div>
                     </div>
