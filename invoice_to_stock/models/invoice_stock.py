@@ -25,7 +25,6 @@ class AccountMoveReversal(models.TransientModel):
 
     x_picking_type_id = fields.Many2one('stock.picking.type', 'Picking Type',
                                         default=_get_stock_type_id,
-                                        required=True,
                                         help="Indica el tipo de movimiento de inventario")
 
     def _prepare_default_reversal(self, move):
@@ -38,9 +37,9 @@ class xInvoiceStock(models.Model):
     _inherit = 'account.move'
 
     def _get_stock_type_id(self):
-        if self._context.get('default_move_type') == 'out_invoice':
+        if self._context.get('default_move_type') == '-out_invoice':
             picking_type_id = self.env['stock.picking.type'].search([('company_id', '=', self.env.company.id), ('code', '=', 'outgoing')], limit=1)
-        elif self._context.get('default_move_type') == 'in_invoice':
+        elif self._context.get('default_move_type') == '-in_invoice':
             picking_type_id = self.env['stock.picking.type'].search([('company_id', '=', self.env.company.id), ('code', '=', 'incoming')], limit=1)
         else:
             return None
@@ -50,7 +49,7 @@ class xInvoiceStock(models.Model):
     x_picking_count = fields.Integer(string="Count", copy=False)
     x_invoice_picking_id = fields.Many2one('stock.picking', string="Picking", copy=False)
 
-    x_picking_type_id = fields.Many2one('stock.picking.type', 'Picking Type',
+    x_picking_type_id = fields.Many2one('stock.picking.type', 'Mov.Inventario',
                                       default=_get_stock_type_id,
                                       help="Indica el tipo de movimiento de inventario")
     x_sale_order_id = fields.Many2one("sale.order", string="Cotización", copy=False,

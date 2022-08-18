@@ -48,7 +48,7 @@ class StockPicking(models.Model):
             if margin_first_pricelist_id or margin_second_pricelist_id:
                 move_ids = self.move_ids_without_package
                 msg = ''
-                for move in move_ids:
+                for move in move_ids.filtered(lambda m: m.purchase_line_id):
                     product = self.env['product.template'].search([('id', '=', move.product_tmpl_id.id)], limit=1)
                     if product.x_margin_first:
                         msg = msg + self._calculate_margin(move, margin_first_pricelist_id, move.purchase_line_id.x_margin_first_price)
