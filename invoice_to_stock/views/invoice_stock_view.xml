@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="xinvoice_stock_form_view" model="ir.ui.view">
+            <field name="name">invoice stock</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_move_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//header" position="inside">
+                    <field name="x_from_sale" invisible="1" />
+                    <button name="action_create_stock_picking" string="Afectar Stock" type="object" class="oe_highlight"
+                            attrs="{'invisible':['|','|','|',('x_from_sale','=',True), ('move_type', 'not in', ('out_refund','in_refund')),('state', 'in', ('draft','cancel')),('x_picking_count', '>=', 1)]}"/>
+                </xpath>
+
+                <xpath expr="//field[@name='invoice_date']" position="after">
+                    <field name="x_invoice_picking_id" invisible="1"/>
+                    <field name="x_picking_type_id"
+                           options="{'no_create': True}"
+                           attrs="{'invisible': [('move_type','in',('entry'))], 'readonly':[('x_picking_count', '>=', 1)]}"
+                           domain="(context.get('default_move_type') in ('in_invoice','out_refund') and [('code', '=', 'incoming')])
+                                    or (context.get('default_move_type') in ('out_invoice', 'in_refund') and [('code', '=', 'outgoing')])" />
+                </xpath>
+
+                <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                    <button type="object"
+                            name="action_view_picking" states="open,paid"
+                            class="oe_stat_button"
+                            attrs="{'invisible':['|',('state','=','draft'),('x_picking_count', '&lt;', 1)]}"
+                            icon="fa-truck">
+                        <field name="x_picking_count" string="Shipment" widget="statinfo"/>
+                    </button>
+                </xpath>
+
+            </field>
+        </record>
+    </data>
+
+</odoo>
