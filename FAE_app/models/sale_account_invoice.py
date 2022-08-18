@@ -22,44 +22,30 @@ class AccountMoveReversal(models.TransientModel):
     _inherit = "account.move.reversal"
 
     def _prepare_default_reversal(self, move):
-        reverse_date = self.date if self.date_mode == 'custom' else move.date
+        data = super(AccountMoveReversal, self)._prepare_default_reversal(move)
         document_type_dest = None
         if move.move_type == 'out_invoice' and move.x_state_dgt not in ('2', 'FI'):
             document_type_dest = 'NC'
         elif move.move_type == 'out_refund' and move.x_state_dgt not in ('2', 'FI'):
             document_type_dest = 'ND'
-        name = None
         if move.x_state_dgt != '1':
             name = move._compute_name_value(move.company_id.id, 'out_refund')
         else:
             name = move._compute_name_value_temp(move.company_id.id)
-
-        data =  {
-            'name': name if name else '/',
-            'ref': _('Reversal of: %(move_name)s, %(reason)s', move_name=move.name, reason=self.reason)
-                   if self.reason
-                   else _('Reversal of: %s', move.name),
-            'date': reverse_date,
-            'invoice_date': move.is_invoice(include_receipts=True) and (self.date or move.date) or False,
-            'journal_id': self.journal_id and self.journal_id.id or move.journal_id.id,
-            'invoice_payment_term_id': None,
-            'invoice_user_id': move.invoice_user_id.id,
-            'auto_post': True if reverse_date > fields.Date.context_today(self) else False,
-            }
-
+        data['name'] = name if name else '/'
         data['x_document_type'] = document_type_dest
         if document_type_dest:
             rec_reference_code = self.env['xreference.code'].search([('code', '=', '01')], limit=1)
-            ref_docum_code = fae_enums.tipo_doc_num.get(move.x_document_type) 
+            ref_docum_code = fae_enums.tipo_doc_num.get(move.x_document_type)
             rec_reference_document_type = False
             if ref_docum_code:
-                rec_reference_document_type = self.env['xreference.document'].search([('code','=',ref_docum_code)], limit=1)                
+                rec_reference_document_type = self.env['xreference.document'].search([('code','=',ref_docum_code)], limit=1)
             data['x_economic_activity_id'] = move.x_economic_activity_id.id
             data['x_payment_method_id'] = move.x_payment_method_id.id
             data['x_reference_code_id'] = rec_reference_code.id
             data['x_invoice_reference_id'] = move.id
-            data['x_reference_document_type_id'] = rec_reference_document_type.id
-
+            if rec_reference_document_type:
+                data['x_reference_document_type_id'] = rec_reference_document_type.id
         return data
 
 
@@ -198,6 +184,9 @@ class FaeAccountInvoice(models.Model):
                                         required=False, 
                                         domain="[('document_type','=',x_document_type),('issuer_identification_num','=',x_partner_vat),('ready2accounting','=',True),('invoice_id','=',False)]",
                                         )
+
+    x_from_sale = fields.Boolean(string='Origen Ventas', default=False, copy=False,
+                                 help='Indica si el movimiento proviene del módulo de ventas')
 
     _sql_constraints = [('x_electronic_code50_uniq', 'unique (x_electronic_code50, company_id)',
                         "La clave numérica deben ser única"), ]
