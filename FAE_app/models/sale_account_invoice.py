@@ -1107,8 +1107,9 @@ class FaeAccountInvoice(models.Model):
             lang = email_template._render_lang(self.ids)[self.id]
         if not lang:
             lang = get_lang(self.env).code
-
-        email_template.attachment_ids = [(5)]   # delete all attachments ids del template
+            
+        # A partir de alguna actualización, lo siguiente generaba un error, por lo que se dejó de ejecutar.
+        # email_template.attachment_ids = [(5)]   # delete all attachments ids del template
 
         if self.partner_id:
             partner_email = (self.partner_id.x_email_fae or self.partner_id.email)
