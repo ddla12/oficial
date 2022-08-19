@@ -1142,7 +1142,7 @@ class FaeAccountInvoice(models.Model):
                     custom_layout="mail.mail_notification_paynow",
                     model_description=self.with_context(lang=lang).type_name,
                     force_email=True,
-                    default_is_print=False
+                    default_is_print=False,
                     )
 
         return {
