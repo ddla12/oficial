@@ -1,13 +1,14 @@
 from odoo import models, fields, api, _
 
 from xml.sax.saxutils import escape
+from odoo.tools.misc import get_lang
 import base64
 import datetime
 import time
 import pytz
 import json
 
-from lxml import etree
+# from lxml import etree
 
 from . import fae_utiles
 from . import fae_enums
@@ -195,7 +196,10 @@ class FaeAccountInvoice(models.Model):
         for rec in self:
             if rec.x_accounting_lock:
                 raise ValidationError('La contabilidad está cerrada a la fecha del movimiento: %s' % rec.name)
-        return super(FaeAccountInvoice, self).unlink()
+            if rec.x_fae_incoming_doc_id:
+                rec.x_fae_incoming_doc_id.invoice_id = False
+        res = super(FaeAccountInvoice, self).unlink()
+        return res
 
     @api.depends('state', 'x_sequence')
     def _compute_x_editable_generated_dgt(self):
@@ -436,8 +440,10 @@ class FaeAccountInvoice(models.Model):
             name = self._compute_name_value(self.company_id.id, self.move_type)
             if name:
                 self.name = name
-        elif self.is_purchase_document() and self.x_fae_incoming_doc_id and self.name != self.x_fae_incoming_doc_id.issuer_sequence:
-            self.name = self.x_fae_incoming_doc_id.issuer_sequence
+        elif self.is_purchase_document() and self.x_fae_incoming_doc_id:
+            name = self.x_fae_incoming_doc_id.get_name_for_bill()
+            if name and self.name != name:
+                self.name = name
 
     def action_post(self):
         # _logger.info('>> action_post: entro')
@@ -559,6 +565,7 @@ class FaeAccountInvoice(models.Model):
                     if inv.is_purchase_document() and inv.x_fae_incoming_doc_id and inv.x_document_type in ('FE','FEE'):
                         inv.x_fae_incoming_doc_id.invoice_id = inv.id
                         inv.x_fae_incoming_doc_id.purchase_registried = True
+        return self
 
     # cron Job: Envia a hacienda todos los documentos de clientes no enviados a hacienda
     def _send_invoices_dgt(self, max_invoices=20):  # cron
@@ -737,10 +744,15 @@ class FaeAccountInvoice(models.Model):
                             # calcula el precio unitario sin el impuesto incluido
                             line_taxes = inv_line.tax_ids.compute_all(inv_line.price_unit, inv.currency_id, 1.0, product=inv_line.product_id,
                                                                       partner=inv.partner_id)
-
-                            price_unit = round(line_taxes['total_excluded'], 5)
+                            if len(line_taxes['taxes']) == 1 and line_taxes['taxes'][0].get('price_include', False):
+                                # impuesto incluido en el precio (se asume que solo hay un impuesto por articulo)
+                                tax_incl = 1 + ((inv_line.tax_ids[0].amount or 0) / 100)
+                                price_unit = inv_line.price_unit / tax_incl
+                            else:
+                                price_unit = line_taxes['total_excluded']
                             base_line = round(price_unit * inv_line.quantity, 5)
-                            descuento = inv_line.discount and round(price_unit * inv_line.quantity * inv_line.discount / 100.0, 5) or 0.0
+                            descuento = round(inv_line.discount and round(price_unit * inv_line.quantity * inv_line.discount / 100.0, 5) or 0.0, 5)
+                            price_unit = round(price_unit, 5)
 
                             subtotal_line = round(base_line - descuento, 5)
 
@@ -1107,9 +1119,10 @@ class FaeAccountInvoice(models.Model):
             lang = email_template._render_lang(self.ids)[self.id]
         if not lang:
             lang = get_lang(self.env).code
-            
+
         # A partir de alguna actualización, lo siguiente generaba un error, por lo que se dejó de ejecutar.
         # email_template.attachment_ids = [(5)]   # delete all attachments ids del template
+        attachment_ids = []
 
         if self.partner_id:
             partner_email = (self.partner_id.x_email_fae or self.partner_id.email)
@@ -1117,18 +1130,19 @@ class FaeAccountInvoice(models.Model):
                 attachment = self.env['ir.attachment'].search([('res_model','=','account.move'),
                                                                 ('res_id','=',self.id),
                                                                 ('res_field','=','x_xml_comprobante')], limit=1 )
+
                 if attachment:
+                    attachment_ids = [attachment.id]
                     attachment.name = self.x_xml_comprobante_fname
                     attachment_resp = self.env['ir.attachment'].search( [('res_model', '=', 'account.move'),
                                                                         ('res_id', '=', self.id),
                                                                         ('res_field', '=', 'x_xml_respuesta')], limit=1 )
-                    if not attachment_resp:
-                        # (6, 0, [IDs]) replace the list of linked IDs (like using (5) then (4,ID) for each ID in the list of IDs)
-                        email_template.attachment_ids = [(6, 0, [attachment.id])]
-                    else:
+                    if attachment_resp:
                         # solo si se tienen los 2 XMLS se incluyen en el correo
                         attachment_resp.name = self.x_xml_respuesta_fname
-                        email_template.attachment_ids = [(6, 0, [attachment.id, attachment_resp.id])]
+                        attachment_ids += [attachment_resp.id]
+
+        email_template.write({'attachment_ids': attachment_ids})
 
         compose_form = self.env.ref('account.account_invoice_send_wizard_form', raise_if_not_found=False)
 
@@ -1142,7 +1156,7 @@ class FaeAccountInvoice(models.Model):
                     custom_layout="mail.mail_notification_paynow",
                     model_description=self.with_context(lang=lang).type_name,
                     force_email=True,
-                    default_is_print=False,
+                    default_is_print=False
                     )
 
         return {

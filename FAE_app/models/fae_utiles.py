@@ -789,8 +789,12 @@ def gen_xml_v43(inv, sale_condition_code, total_servicio_gravado, total_servicio
         elif receiver_company.vat in ('3101173999', '3101173639'):
             # Compañía Palmatica, Grupo Agroindustrial Numar
             xmlotros.Tag_prop('OtroTexto', 'codigo', 'NumeroOrden', str(escape(ref_oc)) )
-    # NumeroOrden
-    if other_extra_ext:
+        elif receiver_company.vat == '3101011989':
+            # Compañía Internacional de Banano
+            xmlotros.Tag_prop('OtroTexto', 'codigo', 'NoDocumento', str(escape(ref_oc)) )
+
+    # OtroTexto (extra)    -- En odoo15 puede que llegue "<p><br></p>" y esto causa error al firmar el documento
+    if other_extra_ext and other_extra_ext != '<p><br></p>':
         xmlotros.Tag('OtroTexto', str(escape(other_extra_ext)))
 
     # OtroTexto o OtroContenido en este orden estricto
@@ -1164,7 +1168,7 @@ def send_mail_fae(inv, full_mail_template):
     # email_template = inv.env.ref('FAE_app.fae_email_template_invoice', raise_if_not_found=False)
     email_template = inv.env.ref(full_mail_template, raise_if_not_found=False)
 
-    if email_template and inv.partner_id:
+    if email_template and inv.partner_id and inv.x_state_dgt == '1':
         partner_email = inv.partner_id.email
         if not partner_email:
             new_state_email = 'SC'
@@ -1182,15 +1186,18 @@ def send_mail_fae(inv, full_mail_template):
                 if attachment_resp:
                     attachment_resp.name = inv.x_xml_respuesta_fname
                     email_template.attachment_ids = [(6, 0, [attachment.id, attachment_resp.id])]
-
-                email_template.send_mail(inv.id, force_send=True)
+                try:
+                    email_template.send_mail(inv.id, force_send=True)
+                    new_state_email = 'E'
+                except Exception as error:
+                    pass
                 # 2022-0129: Las siguientes 2 líneas se puso porque odoo hizo una actualización en esta semana
                 #            que provocó que se perdieran la asociación de los attachment con los documentos
                 attachment.write({'res_model': inv._name, 'res_id': inv.id})
+
                 if attachment_resp:
                     attachment_resp.write({'res_model': inv._name, 'res_id': inv.id})
                 # << fin del parche por actualización
-                new_state_email = 'E'
             else:
                 raise UserError('XML del documento no ha sido generado')
     return new_state_email

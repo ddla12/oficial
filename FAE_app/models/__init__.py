@@ -16,3 +16,4 @@ from . import fae_mail
 from . import fae_incoming_doc
 from . import sale_account_invoice
 from . import sale_order
+from . import mail_template
