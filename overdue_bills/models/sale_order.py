@@ -33,14 +33,16 @@ class SaleOrderInherit(models.Model):
             })
 
         if amount_residual_by_currency:
-            overdue_bill_count_message = 'Este cliente tiene facturas vencidas con pagos pendientes. \n' \
-                                             'Se recomienda pagar los montos siguientes:\n'
             cant = 0
             for amount in amount_residual_by_currency:
-                cant += 1
-                if cant > 1:
-                    overdue_bill_count_message += ', '
-                overdue_bill_count_message += str(amount.get('currency')) + ': ' + str(amount.get('amount_residual')) + '\n'
+                if round(amount.get('amount_residual', 2)) > 0:
+                    cant += 1
+                    if cant == 1:
+                        overdue_bill_count_message = 'Este cliente tiene facturas vencidas con pagos pendientes. \n'
 
-            overdue_bill_count_message += ')'
-            self.x_overdue_bill_count_message = overdue_bill_count_message
+                    if cant > 1:
+                        overdue_bill_count_message += ', '
+                    overdue_bill_count_message += str(amount.get('currency')) + ': ' + str(round(amount.get('amount_residual', 2))) + '\n'
+            if cant >= 1:
+                overdue_bill_count_message += ')'
+                self.x_overdue_bill_count_message = overdue_bill_count_message
