@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- account invoice !-->
+    <record id="pos_order_invoice_form_inherit" model="ir.ui.view" >
+        <field name="name">Pos Order</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/header" position="after">
+                <div class="alert alert-info" role="alert" style="margin-bottom:0px;"
+                    attrs="{'invisible':['|',('partner_id', '=', False), ('x_overdue_bill_count_message', '=', False)]}">
+                    <field name="x_overdue_bill_count_message" readonly="1" nolabel="1"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>
