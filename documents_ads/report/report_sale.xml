@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_saleorder_document_inherit_ads" inherit_id="sale.report_saleorder_document"  priority="21">
+        <xpath expr="//p[@id='fiscal_position_remark']" position="after">
+            <!-- Información de los ADS -->
+            <div id="n2_ads_info" style="width:100%;margin-top:0;font-size:14px;padding:2px;text-align:justify">
+                <t t-foreach="request.env['xdocuments.comercial.ads'].get_document_ads('sale', doc.date_order, doc.partner_id)" t-as="ads">
+                    <t t-raw="ads['data']" />
+                </t>
+            </div>
+        </xpath>
+    </template>
+</odoo>

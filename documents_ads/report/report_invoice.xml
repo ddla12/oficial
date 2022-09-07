@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_invoice_document_inherit_ads" inherit_id="FAE_app.fae_report_invoice_document_inherited"  priority="21">
+        <xpath expr="//div[@id='n2_invoice_info']" position="after">
+            <!-- Información de los ADS -->
+            <div id="n2_ads_info" style="width:100%;margin-top:0;font-size:14px;padding:2px;text-align:justify">
+                <t t-if="o.move_type == 'out_invoice'">
+                    <t t-foreach="request.env['xdocuments.comercial.ads'].get_document_ads('invoice', o.invoice_date, o.partner_id)" t-as="ads">
+                        <t t-raw="ads['data']" />
+                    </t>
+                </t>
+            </div>
+        </xpath>
+
+    </template>
+</odoo>

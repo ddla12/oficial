@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="fae_partner_ads_form_inherit"  model="ir.ui.view">
+            <field name="name">view.partner.ads.form.inherit</field>
+            <field name="model">res.partner</field>
+            <field name="type">form</field>
+            <field name="inherit_id" ref="FAE_app.fae_partner_form_inherit"/>
+            <field name="arch" type="xml">
+                <xpath expr="//page[@name='internal_notes']" position="after">
+                    <page name="ads_tab" string="Notas en documento" >
+                        <field name="x_documents_ads_ids" widget="many2many"
+                               domain="[('active', '=', True), ('automatic_apply', '=', False), '|',
+                               ('is_foreign', '=', x_foreign_partner), ('partner_type', '=', 'all')]">
+                            <tree editable="bottom">
+                                <field name="sequence" />
+                                <field name="name" />
+                                <field name="destination_type" />
+                                <field name="date_from" />
+                                <field name="date_to" />
+                                <field name="automatic_ads_replaced_id" />
+                           </tree>
+                        </field>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

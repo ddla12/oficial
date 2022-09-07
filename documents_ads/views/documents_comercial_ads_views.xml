@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="xdocuments_comercial_ads_search" model="ir.ui.view">
+        <field name="name">xdocuments.comercial.ads.search</field>
+        <field name="model">xdocuments.comercial.ads</field>
+        <field name="arch" type="xml">
+            <search string="Notas en documentos">
+                <filter string="Activo" name="active" domain="[('active', '=', True)]"/>
+                <field name="name"/>
+                <field name="sequence"/>
+                <field name="destination_type"/>
+                <field name="partner_type"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Documents ADS TREE VIEW + MUTI_EDIT -->
+    <record id="xdocuments_comercial_ads_tree" model="ir.ui.view">
+        <field name="name">xdocuments.comercial.ads.tree</field>
+        <field name="model">xdocuments.comercial.ads</field>
+        <field name="arch" type="xml">
+            <tree string="Notas en documento" multi_edit="1" >
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="destination_type"/>
+                <field name="partner_type"/>
+                <field name="automatic_apply"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="sequence_display" string="Sec."/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="xdocuments_comercial_ads_form" model="ir.ui.view">
+        <field name="name">xdocuments.comercial.ads.form</field>
+        <field name="model">xdocuments.comercial.ads</field>
+        <field name="priority" eval="1"/>
+        <field name="arch" type="xml">
+            <form string="Notas en documento">
+                <sheet>
+                    <div class="oe_title">
+                        <div class="oe_edit_only">
+                            <label for="name"/>
+                        </div>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="destination_type"/>
+                            <field name="partner_type"/>
+                            <field name="automatic_apply"/>
+                        </group>
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="automatic_ads_replaced_id" attrs="{'readonly':[('automatic_apply','=',True)]}"  options="{'no_create': True, 'no_open': True}"/>
+                    </group>
+                    <p>Ingrese la información a colocar en el documento</p>
+                    <group>
+                        <field name="data"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="xdocuments_comercial_ads_action" model="ir.actions.act_window">
+        <field name="name">Notas en documentos</field>
+        <field name="res_model">xdocuments.comercial.ads</field>
+        <field name="view_id" ref="xdocuments_comercial_ads_tree"/>
+        <field name="context">{'delete': False}</field>
+        <field name="help" type="html">
+          <p>
+            Notas en documentos
+          </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_partner_title_contact"
+        action="xdocuments_comercial_ads_action"
+        name="Notas en documento" parent="contacts.res_partner_menu_config"
+        sequence="3"/>
+</odoo>
