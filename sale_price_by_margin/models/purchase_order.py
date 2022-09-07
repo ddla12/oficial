@@ -14,15 +14,13 @@ class PurchaseOrderLine(models.Model):
 
 
     @staticmethod
-    def _calculate_margin_price(margin, price_unit, round_factor):
-        margin_price = round((price_unit * (1 + margin / 100)) / round_factor, 0) * round_factor
+    def _calculate_margin_price(currency_id, margin, price_unit, round_factor):
+        if currency_id.name in ('USD', 'EUR'):
+            # Dol y Euros no se redondean con el factor
+            margin_price = round((price_unit * (1 + margin / 100)), 2)
+        else:
+            margin_price = round((price_unit * (1 + margin / 100)) / round_factor, 0) * round_factor
         return margin_price
-
-    # @api.onchange('x_old_standard_price')
-    # def _onchange_old_price_unit(self):
-    #     self.ensure_one
-    #     if self.product_id:
-    #         self.x_old_standard_price = self.product_id.product_tmpl_id.standard_price
 
     @api.onchange('price_unit')
     def _onchange_price_unit(self):
@@ -44,8 +42,8 @@ class PurchaseOrderLine(models.Model):
                     price_unit = price_unit - (line.x_amount_discount/ line.product_qty)
                 if product_tmpl.x_margin_first:
                     line.x_margin_first = product_tmpl.x_margin_first
-                    line.x_margin_first_price = line._calculate_margin_price(product_tmpl.x_margin_first, price_unit, product_tmpl.x_round_factor)
+                    line.x_margin_first_price = line._calculate_margin_price(line.currency_id, product_tmpl.x_margin_first, price_unit, product_tmpl.x_round_factor)
                 if product_tmpl.x_margin_second:
                     line.x_margin_second = product_tmpl.x_margin_second
-                    line.x_margin_second_price = line._calculate_margin_price(product_tmpl.x_margin_second, price_unit, product_tmpl.x_round_factor)
+                    line.x_margin_second_price = line._calculate_margin_price(line.currency_id, product_tmpl.x_margin_second, price_unit, product_tmpl.x_round_factor)
 
