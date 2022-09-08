@@ -289,15 +289,12 @@
                             <span t-field="session.x_notes"/>
                         </div>
                         <div id="div_firmas">
-                            <!-- style="border-collapse: collapse #fff; -->
-                            <table style="margin-left:auto; margin-right: auto; border-style: None; margin-top:70px; font-family:Helvetica;font-size:12px">
+                            <table style="margin-left:auto; margin-right: auto; border-style: None; margin-top:70px; font-family:Helvetica; font-size:12px">
                                 <tr>
-                                    <td style="border-top: 2px solid #ddd;" width="190px">
-                                        Entregado por: <br/>
+                                    <td style="border-top: 1px solid; border-right: None;" width="190px"> Entregado por: <br />
                                     </td>
-                                    <td width="120px"></td>
-                                    <td style="border-top:2px solid #ddd;" width="190px">
-                                        Recibido por <br/>
+                                    <td style="border-right: None;" width="120px"></td>
+                                    <td style="border-top: 1px solid; border-right: None" width="190px"> Recibido por <br />
                                     </td>
                                 </tr>
                             </table>
