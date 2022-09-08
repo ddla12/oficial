@@ -405,7 +405,7 @@
                 </div>
 
                 <!-- Información general de la factura -->
-                <div io="n2_invoice_info" style="width:100%;margin-top:0;font-size:14px;padding:2px;text-align:justify">
+                <div id="n2_invoice_info" style="width:100%;margin-top:0;font-size:14px;padding:2px;text-align:justify">
                     <t t-if="o.move_type == 'out_invoice' and o.company_id.x_line_info_invoice and (not o.x_document_type or o.x_document_type not in ('FEE','FEC'))">
                         <t t-raw="o.company_id.x_line_info_invoice" />
                     </t>

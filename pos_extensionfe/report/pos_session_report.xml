@@ -151,7 +151,7 @@
                                 <t t-foreach="session.get_payments_by_method()" t-as="payment_rec">
                                     <tr>
                                         <t t-if="payment_rec['tipo']=='payment'">
-                                            <td><span t-esc="payment_rec['payment_name'] + '.'"/></td>
+                                            <td><span t-esc="payment_rec['payment_name']"/></td>
                                             <td><span t-esc="payment_rec['currency_name']"/></td>
                                         </t>
                                         <t t-else="">
@@ -283,6 +283,25 @@
                                 </tbody>
                             </table>
                         </t>
+                        <br/>
+                        <div id="div_observaciones">
+                            <strong>Observaciones</strong><br/>
+                            <span t-field="session.x_notes"/>
+                        </div>
+                        <div id="div_firmas">
+                            <!-- style="border-collapse: collapse #fff; -->
+                            <table style="margin-left:auto; margin-right: auto; border-style: None; margin-top:70px; font-family:Helvetica;font-size:12px">
+                                <tr>
+                                    <td style="border-top: 2px solid #ddd;" width="190px">
+                                        Entregado por: <br/>
+                                    </td>
+                                    <td width="120px"></td>
+                                    <td style="border-top:2px solid #ddd;" width="190px">
+                                        Recibido por <br/>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
                         <div class="oe_structure"/>
                     </div>
                 </t>
