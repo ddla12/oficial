@@ -18,11 +18,12 @@ class SaleOrder(models.Model):
     x_document_type = fields.Selection(string="Tipo Comprobante",
                                         selection=[('FE', 'Factura Electrónica'),
                                                 ('TE', 'Tiquete Electrónico'), ],
+                                       copy=False,
                                         )
     x_sent_to_pos = fields.Boolean(default=False, copy=False )
     x_date_sent_pos = fields.Datetime(string="Fecha Enviado", copy=False )
     x_pos_config_id = fields.Many2one('pos.config', string="Caja Punto Venta", copy=False)
-    x_pos_order_id = fields.Many2one("pos.order", "Órden de POS", tracking=True)
+    x_pos_order_id = fields.Many2one("pos.order", "Órden de POS", copy=False)
 
     @api.onchange('x_document_type')
     def _onchange_x_document_type(self):
