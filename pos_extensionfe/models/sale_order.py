@@ -17,11 +17,12 @@ class SaleOrder(models.Model):
                                     , help='Empleado que levantó la cotización')
     x_document_type = fields.Selection(string="Tipo Comprobante",
                                         selection=[('FE', 'Factura Electrónica'),
-                                                ('TE', 'Tiquete Electrónico'), ], 
-                                        )    
+                                                ('TE', 'Tiquete Electrónico'), ],
+                                        )
     x_sent_to_pos = fields.Boolean(default=False, copy=False )
     x_date_sent_pos = fields.Datetime(string="Fecha Enviado", copy=False )
     x_pos_config_id = fields.Many2one('pos.config', string="Caja Punto Venta", copy=False)
+    x_pos_order_id = fields.Many2one("pos.order", "Órden de POS", tracking=True)
 
     @api.onchange('x_document_type')
     def _onchange_x_document_type(self):
@@ -41,7 +42,7 @@ class SaleOrder(models.Model):
     def send_to_pos(self):
         if self.x_sent_to_pos:
            raise ValidationError('Este presupuesto ya había sido enviado a caja')
-        
+
         # if self._get_forbidden_state_confirm() & set(self.mapped('state')):
         #     raise ValidationError(_('It is not allowed to confirm an order in the following states: %s') % (', '.join(self._get_forbidden_state_confirm())))
 
@@ -101,6 +102,8 @@ class SaleOrder(models.Model):
                 'tax_ids': line.tax_id
             }
             res = self.env['pos.order.line'].create(line_vals)
-        self.write({'state':'sale', 'date_order': fields.Datetime.now(), 'x_sent_to_pos': True, 'x_date_sent_pos': fields.Datetime.now() })
 
+        self.x_pos_order_id = pos_order_id
+        self.write({'state': 'sale', 'date_order': fields.Datetime.now(), 'x_sent_to_pos': True, 'x_date_sent_pos': fields.Datetime.now() })
+        self.message_post(body='Enviado a Cajas (id: %s)' % (str(pos_order_id)))
         # return pos_order

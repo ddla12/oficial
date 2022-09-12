@@ -151,6 +151,7 @@
                             <field name="x_reference_code_id" options="{'no_open': True}"
                                    attrs="{'invisible':[('x_move_type', '!=', 'refund')], 'readonly':[('state','!=','draft')]}"/>
                             <field name="x_error_count" invisible="1"/>
+                            <field name="x_sale_order_id" attrs="{'invisible':[('x_sale_order_id','=',False)]}" readonly="1" />
                         </group>
                     </group>
                 </xpath>

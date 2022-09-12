@@ -40,7 +40,7 @@ class PosSessionInherit(models.Model):
     def _compute_cash_balance(self):
         for session in self:
             # session.x_cash_register_cashier_moves = sum( l.amount for l in session.line_ids)
-            session.x_cash_register_cashier_moves = sum( session.cash_register_id.mapped('line_ids').filtered(lambda cash_io: cash_io.x_source).mapped('amount'))
+            session.x_cash_register_cashier_moves = sum( session.cash_register_id.mapped('line_ids').filtered(lambda r: r.x_source == 'cash_io').mapped('amount'))
             # cash_payment_method = session.payment_method_ids.filtered('is_cash_count')[:1]
             cash_payment_method_ids = session.payment_method_ids.filtered(lambda r: r.is_cash_count
                                                                                 and (not r.x_payment_method_id or r.x_payment_method_id.code == '01'))

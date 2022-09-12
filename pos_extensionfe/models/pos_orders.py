@@ -655,7 +655,7 @@ class PosOrderInherit(models.Model):
         if sequence.number_next_actual >= 5:
             consecutivo = sequence.get_next_char(sequence.number_next_actual - 1)
             prev_x_sequence = fae_utiles.gen_consecutivo(self.x_document_type, consecutivo, sucursal, terminal)
-            consecutivo = sequence.get_next_char(sequence.number_next_actual - 20)
+            consecutivo = sequence.get_next_char(max(sequence.number_next_actual, sequence.number_next_actual - 20))
             from_x_sequence = fae_utiles.gen_consecutivo(self.x_document_type, consecutivo, sucursal, terminal)
 
             sql_cmd = """
