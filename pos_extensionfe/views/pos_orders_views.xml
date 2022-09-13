@@ -74,16 +74,15 @@
                     <field name="state" invisible="1" />
                     <field name="x_cashier_session_id" invisible="1" />
                 </xpath>
-                <xpath expr="//button[@name='%(point_of_sale.action_pos_payment)d']" position="attributes" >
-                    <attribute name="attrs">{'invisible':['|',('x_cashier_session_id','=',0)]}</attribute>
-                </xpath>
+
                 <xpath expr="//button[@name='action_pos_order_invoice']" position="attributes" >
                     <attribute name="string">APLICAR A CREDITO'</attribute>
                     <attribute name="attrs">{'invisible': ['|','|',('x_cashier_session_id','=',0), ('invoice_group', '=', False), ('state','!=','draft')]}</attribute>
                 </xpath>
-                
+
                 <xpath expr="//button[@name='%(point_of_sale.action_pos_payment)d']" position="replace">
-                    <button name="action_get_payment" string="Payment" type="object" class="oe_highlight" states="draft" />
+                    <button name="action_get_payment" string="Payment" type="object" class="oe_highlight"
+                                  attrs="{'invisible':['|','|',('x_cashier_session_id','=',0), ('state','!=','draft'),('amount_total','&lt;',0)]}" />
                 </xpath>
 
                 <xpath expr="//form/header/button[@name='refund']" position="after">
