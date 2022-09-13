@@ -82,7 +82,7 @@
 
                 <xpath expr="//button[@name='%(point_of_sale.action_pos_payment)d']" position="replace">
                     <button name="action_get_payment" string="Payment" type="object" class="oe_highlight"
-                                  attrs="{'invisible':['|','|',('x_cashier_session_id','=',0), ('state','!=','draft'),('amount_total','&lt;',0)]}" />
+                                  attrs="{'invisible':['|','|',('x_cashier_session_id','=',0), ('state','!=','draft'),('amount_total','=',0)]}" />
                 </xpath>
 
                 <xpath expr="//form/header/button[@name='refund']" position="after">
