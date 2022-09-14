@@ -6,11 +6,16 @@
         <field name="inherit_id" ref="account.view_account_move_reversal"/>
         <field name="arch" type="xml">
             <xpath expr="//group/field[@name='reason']" position="before">
-                <field name="x_picking_type_id"
+                <field name="x_default_picking_type_id" invisible="1" />
+                <field name="x_picking_type_id" force_save="1" string='Tipo Operación'
                        options="{'no_create': True, 'no_open': True}"
-                       attrs="{'invisible': [('move_type','=','entry')], 'required':[('move_type','!=',('entry'))]}"
-                       domain="(move_type == 'out_invoice' and [('code', '=', 'incoming')])
-                                or (move_type == 'in_invoice' and [('code', '=', 'outgoing')])" />
+                       attrs="{'invisible': [('move_type','=','entry')], 'readonly': [('x_default_picking_type_id','=',True)], 'required':[('move_type','!=',('entry'))]}"
+                       domain="(move_type == 'out_invoice' and [('code', 'in', ('incoming','internal'))])
+                                or (move_type == 'in_invoice' and [('code', 'in', ('outgoing','internal'))])"
+                       />
+            </xpath>
+            <xpath expr="//button[@name='reverse_moves']" position="attributes">
+              <attribute name="attrs">{'invisible': [('x_picking_type_id', '=', False)]}</attribute>
             </xpath>
         </field>
     </record>
