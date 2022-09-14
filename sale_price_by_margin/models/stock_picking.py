@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError, ValidationError
+from odoo.tools import float_round, float_compare
 
 import logging
 
@@ -16,15 +16,19 @@ class StockPicking(models.Model):
         po_line = move.purchase_line_id
         if po_line.currency_id != price_list.currency_id:
             new_price = po_line.currency_id._convert(new_price, price_list.currency_id, po_line.company_id, fields.Date.context_today(self))
+            round_factor = po_line.product_id.product_tmpl_id.x_round_factor
+            if price_list.currency_id.name == 'CRC' and round_factor > 1:
+                new_price = round(new_price / round_factor, 0) * round_factor
+        new_price = float_round(new_price, precision_digits=2)
 
         item = price_list.item_ids.filtered(
                 lambda r: (r.product_id == move.product_id) or (r.product_tmpl_id == move.product_tmpl_id and r.product_id == move.product_id))
-        if item and item.fixed_price != new_price:
-            msg += ' Producto: %s  %s --> %s \n' % (item.product_tmpl_id.name, str(item.fixed_price), str(new_price))
+        if item and float_compare(item.fixed_price, new_price, precision_digits=2) != 0:
+            msg = '%s --> %s' % (str(item.fixed_price), str(new_price))
             item.write({"fixed_price": new_price})
         elif not item:
             # No existe por lo que registra el artículo en la lista
-            msg += ' Producto: %s  %s \n' % (item.product_tmpl_id.name, str(new_price))
+            msg = str(new_price)
             self.env['product.pricelist.item'].create({'pricelist_id': price_list.id,
                                                         'product_tmpl_id': move.product_tmpl_id.id,
                                                         'product_id': move.product_id.id,
@@ -33,8 +37,6 @@ class StockPicking(models.Model):
                                                         'currency_id': price_list.currency_id.id,
                                                         'compute_price': 'fixed',
                                                         'fixed_price': new_price})
-        if msg:
-            msg = price_list.name + ' ' + msg
         return msg
 
     def button_validate(self):
@@ -50,11 +52,14 @@ class StockPicking(models.Model):
                 msg = ''
                 for move in move_ids.filtered(lambda m: m.purchase_line_id):
                     product = self.env['product.template'].search([('id', '=', move.product_tmpl_id.id)], limit=1)
+                    msg1 = msg2 = ''
                     if product.x_margin_first:
-                        msg = msg + self._calculate_margin(move, margin_first_pricelist_id, move.purchase_line_id.x_margin_first_price)
+                        msg1 = self._calculate_margin(move, margin_first_pricelist_id, move.purchase_line_id.x_margin_first_price)
                     if product.x_margin_second:
-                        msg = msg + self._calculate_margin(move, margin_second_pricelist_id, move.purchase_line_id.x_margin_second_price)
+                        msg2 = self._calculate_margin(move, margin_second_pricelist_id, move.purchase_line_id.x_margin_second_price)
+                    if msg1 or msg2:
+                        msg += 'Prod: %s: [ %s  y  %s ]<br/>' % (move.product_tmpl_id.default_code or move.product_tmpl_id.name[:20], msg1, msg2)
                 if msg:
-                    msg = 'Se actualizó los siguientes precios de los siguientes artículos:\n '+msg
+                    msg = ('Actualiza listas de precios:  [ %s  y  %s ]<br/>' % (margin_first_pricelist_id.name, margin_second_pricelist_id.name)) + msg
                     self.purchase_id.message_post(body=msg)
         return res
