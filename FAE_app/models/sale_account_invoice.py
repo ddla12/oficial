@@ -8,8 +8,6 @@ import time
 import pytz
 import json
 
-# from lxml import etree
-
 from . import fae_utiles
 from . import fae_enums
 
@@ -35,6 +33,7 @@ class AccountMoveReversal(models.TransientModel):
             name = move._compute_name_value_temp(move.company_id.id)
         data['name'] = name if name else '/'
         data['x_document_type'] = document_type_dest
+        data['x_origin_move'] = 'reversal'       # Wizard_reversal
         if document_type_dest:
             rec_reference_code = self.env['xreference.code'].search([('code', '=', '01')], limit=1)
             ref_docum_code = fae_enums.tipo_doc_num.get(move.x_document_type)
@@ -188,6 +187,8 @@ class FaeAccountInvoice(models.Model):
 
     x_from_sale = fields.Boolean(string='Origen Ventas', default=False, copy=False,
                                  help='Indica si el movimiento proviene del módulo de ventas')
+    # ayuda a determinar en donde fue originado el movimiento
+    x_origin_move = fields.Char(string='Origen Move', copy=False)
 
     _sql_constraints = [('x_electronic_code50_uniq', 'unique (x_electronic_code50, company_id)',
                         "La clave numérica deben ser única"), ]
@@ -247,6 +248,14 @@ class FaeAccountInvoice(models.Model):
             else:
                 inv.x_show_generate_xml_button = False
 
+    @api.constrains('name')
+    def check_name(self):
+        for inv in self:
+            if inv.is_sale_document() and inv.partner_id and inv.name not in ('/', 'Draft') and inv.line_ids:
+                line = inv.line_ids.filtered(lambda r: r.account_id == inv.partner_id.property_account_receivable_id)
+                if line:
+                    line.write({'name': inv.name})
+
     @api.onchange('partner_id', 'company_id')
     def _get_economic_activities(self):
         for inv in self:
@@ -280,7 +289,6 @@ class FaeAccountInvoice(models.Model):
             self.x_economic_activity_id = self.partner_id.x_economic_activity_id
         else:
             self.x_economic_activity_id = self.company_id.x_economic_activity_id
-
 
     @api.onchange('partner_id')
     def _partner_changed(self):
@@ -714,7 +722,7 @@ class FaeAccountInvoice(models.Model):
                         sale_condition_code = '01'
 
                     if write_log:
-                        _logger.info('>> generate_xml_and_send: Procesa lineas')
+                        _logger.info('>> generate_xml_and_send_dgt: Procesa lineas')
                     # procesa las líneas del movimiento
                     for inv_line in inv.invoice_line_ids:
 
@@ -899,7 +907,7 @@ class FaeAccountInvoice(models.Model):
                         continue
 
                     if write_log:
-                        _logger.info('>> generate_xml_and_send: Continua generando el consecutivo')
+                        _logger.info('>> generate_xml_and_send_dgt: Continua generando el consecutivo')
 
                     # Genera el consecutivo y clave de 50
                     gen_consecutivo = False
@@ -936,7 +944,7 @@ class FaeAccountInvoice(models.Model):
                         if sequence.number_next_actual >= 5:
                             consecutivo = sequence.get_next_char(sequence.number_next_actual - 1)
                             prev_x_sequence = fae_utiles.gen_consecutivo(inv.x_document_type, consecutivo, inv.company_id.x_sucursal, inv.company_id.x_terminal)
-                            consecutivo = sequence.get_next_char(sequence.number_next_actual - 4)
+                            consecutivo = sequence.get_next_char(sequence.number_next_actual - min(20, sequence.number_next_actual-1))
                             from_x_sequence = fae_utiles.gen_consecutivo(inv.x_document_type, consecutivo, inv.company_id.x_sucursal, inv.company_id.x_terminal)
 
                             sql_cmd = """
@@ -978,7 +986,7 @@ class FaeAccountInvoice(models.Model):
                         inv.name = inv.x_sequence
                         inv.payment_reference = None
                     # se considera importante registra en el LOG la generación de la clave de hacienda
-                    _logger.info('>> generate_xml_and_send: Account_move id: %s generó clave: %s  Fec.emision: %s', str(inv.id), inv.x_electronic_code50, inv.x_issue_date)
+                    _logger.info('>> generate_xml_and_send_dgt: Account_move id: %s generó clave: %s  Fec.emision: %s', str(inv.id), inv.x_electronic_code50, inv.x_issue_date)
                     #
                     total_servicio_gravado = round(total_servicio_gravado, 5)
                     total_servicio_exento = round(total_servicio_exento, 5)
@@ -995,7 +1003,7 @@ class FaeAccountInvoice(models.Model):
                     if inv.company_id.x_situacion_comprobante == '1':
                         # crea el XML
                         if write_log:
-                            _logger.info('>> generate_xml_and_send: generando el xml de documento %s', inv.x_sequence)
+                            _logger.info('>> generate_xml_and_send_dgt: generando el xml de documento %s', inv.x_sequence)
                         try:
                             xml_str = fae_utiles.gen_xml_v43(inv, sale_condition_code, total_servicio_gravado, total_servicio_exento, total_servicio_exonerado
                                                              , total_mercaderia_gravado, total_mercaderia_exento, total_mercaderia_exonerado
@@ -1036,9 +1044,12 @@ class FaeAccountInvoice(models.Model):
                 if inv.x_state_dgt == '1':
                     response_status = 400
                     response_text = 'ya había sido enviado a la DGT'
+                elif not inv.x_sequence:
+                    inv.message_post(subject='Note', body='No fue posible generar el número de documento electrónico')
+                    continue
                 else:
                     if write_log:
-                        _logger.info('>> generate_xml_and_send:  Enviad XML %s a la DGT', inv.x_sequence)
+                        _logger.info('>> generate_xml_and_send_dgt:  Envia XML %s a la DGT', inv.x_sequence)
                     response_json = fae_utiles.send_xml_fe(inv, inv.x_issue_date, xml_firmado, inv.company_id.x_fae_mode)
                     response_status = response_json.get('status')
                     response_text = response_json.get('text')
