@@ -49,7 +49,6 @@ class PosOrderLineInherit(models.Model):
     x_amount_total_line = fields.Float(string="Monto Total", readonly=True)
     x_last_balance = fields.Float(string="Monto Anterior", help='Saldo por Cobrar antes de este pago',)
 
-
     # override el onchange original de odoo, para poder permitir cambiar los impuestos
     @api.onchange('product_id')
     def _onchange_product_id(self):
@@ -136,6 +135,7 @@ class PosOrderInherit(models.Model):
     payment_ids = fields.One2many(copy=False)
 
     # Otros campos
+    x_economic_activity_id = fields.Many2one("xeconomic.activity", string="Actividad Económica", required=False, )
     employee_id = fields.Many2one('hr.employee', string='Vendedor', store=True, readonly=True)
     currency_id = fields.Many2one('res.currency', string='Currency', store=True,                                 
                                     default=_default_xpos_currency,
@@ -229,6 +229,16 @@ class PosOrderInherit(models.Model):
         taxes = taxes.compute_all(price, line.order_id.pricelist_id.currency_id, line.qty, product=line.product_id, partner=line.order_id.partner_id or False)['taxes']
         return sum(tax.get('amount', 0.0) for tax in taxes)
 
+    @api.onchange('company_id')
+    def _get_economic_activities(self):
+        for rec in self:
+            rec.x_economic_activity_id = rec.company_id.x_economic_activity_id
+
+    @api.constrains('partner_id', 'x_economic_activity_id')
+    def check_x_economic_activity_id(self):
+        if not self.x_economic_activity_id:
+            self.x_economic_activity_id = self.company_id.x_economic_activity_id
+
     @api.onchange('partner_id')
     def _onchange_xpos_partner_id(self):
         for rec in self:
@@ -256,7 +266,6 @@ class PosOrderInherit(models.Model):
             tax_ids = line.product_id.taxes_id.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
             line.tax_ids = self.fiscal_position_id.map_tax(tax_ids, line.product_id, self.partner_id)
             line.tax_ids_after_fiscal_position = line.tax_ids
-
 
     @api.onchange('payment_ids', 'lines')
     def _onchange_amount_all(self):

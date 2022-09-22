@@ -487,11 +487,10 @@ def gen_xml_v43(inv, sale_condition_code, total_servicio_gravado, total_servicio
     lines, otrosCargos, currency_rate, other_extra_ext, tipo_documento_referencia, numero_documento_referencia,
     fecha_emision_referencia, codigo_referencia, razon_referencia ):
 
-    numero_linea = 0
     payment_methods_code = []
     if inv._name == 'pos.order':
         # Documento de POS
-        economic_activity_code = inv.company_id.x_economic_activity_id.code
+        economic_activity_code = (inv.x_economic_activity_id and inv.x_economic_activity_id.code) or inv.company_id.x_economic_activity_id.code
         plazo_credito = '0'
         ref_oc = None
         for payment in inv.payment_ids:
@@ -643,8 +642,8 @@ def gen_xml_v43(inv, sale_condition_code, total_servicio_gravado, total_servicio
     # lineas del documento
     xmlstr.Append('<DetalleServicio>')
 
+    numero_linea = 0
     jlines = json.loads(lines)
-
     for (k, v) in jlines.items():
         numero_linea = numero_linea + 1
 

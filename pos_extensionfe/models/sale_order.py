@@ -82,7 +82,8 @@ class SaleOrder(models.Model):
             'crm_team_id': self.team_id.id,
             'note': self.note,
             'employee_id': self.x_employee_id.id,
-            'x_sale_order_id': self.id
+            'x_sale_order_id': self.id,
+            'x_economic_activity_id': self.x_economic_activity_id,
         }
 
         # pos_order = self.create_pos_order(data_vals)
