@@ -83,7 +83,7 @@ class SaleOrder(models.Model):
             'note': self.note,
             'employee_id': self.x_employee_id.id,
             'x_sale_order_id': self.id,
-            'x_economic_activity_id': self.x_economic_activity_id,
+            'x_economic_activity_id': self.x_economic_activity_id.id,
         }
 
         # pos_order = self.create_pos_order(data_vals)
