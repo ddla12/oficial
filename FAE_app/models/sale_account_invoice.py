@@ -35,6 +35,7 @@ class AccountMoveReversal(models.TransientModel):
             name = move._compute_name_value_temp(move.company_id.id)
         data['name'] = name if name else '/'
         data['x_document_type'] = document_type_dest
+        data['x_origin_move'] = 'reversal'       # Wizard_reversal
         if document_type_dest:
             rec_reference_code = self.env['xreference.code'].search([('code', '=', '01')], limit=1)
             ref_docum_code = fae_enums.tipo_doc_num.get(move.x_document_type)
@@ -188,6 +189,8 @@ class FaeAccountInvoice(models.Model):
 
     x_from_sale = fields.Boolean(string='Origen Ventas', default=False, copy=False,
                                  help='Indica si el movimiento proviene del módulo de ventas')
+    # ayuda a determinar en donde fue originado el movimiento
+    x_origin_move = fields.Char(string='Origen Move', copy=False)
 
     _sql_constraints = [('x_electronic_code50_uniq', 'unique (x_electronic_code50, company_id)',
                         "La clave numérica deben ser única"), ]
