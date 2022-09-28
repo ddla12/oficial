@@ -9,7 +9,7 @@
     'author': '`Prointec',
     'category': 'Sales',
     'version': '14.0.0.1',
-    'depends': ["base", "sale", "account", ],
+    'depends': ["base", "sale", "account", "point_of_sale"],
 'data': [
         'views/sale_account_invoice_views.xml',
         'views/sale_order_views.xml',
