@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    'name': "xPurchase discount ",
+    'name': "xPurchase discount",
     'summary': """Registro de descuentos en Compras""",
     'description': """
     Permite digitar descuentos de forma porcentual o por monto concedidos por el proveedor para

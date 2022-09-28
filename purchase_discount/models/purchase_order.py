@@ -12,16 +12,16 @@ class AccountMoveLine(models.Model):
     x_amount_discount = fields.Monetary(string='Monto descuento')
 
 
-
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 
+    x_price_unit = fields.Float(string='Precio Unit', digits='Product Price',
+                                help='Precio unitario bruto, es decir sin incluir el descuento')
     x_discount_calc_type = fields.Char(string='Aplicar % descuento', size=2,
                                        help='valores: p=Descuento por Porcentaje, m=Descuento por Monto')
     x_discount = fields.Float(string="% descuento",
                               help='The discount in percentage, between 1 and 100')
     x_amount_discount = fields.Monetary(string='Monto descuento')
-
 
     @staticmethod
     def calc_amount_discount(price_subtotal, discount, precision_rounding):
@@ -63,6 +63,7 @@ class PurchaseOrderLine(models.Model):
             discount_percent = None
             amount_discount = 0
         res.update({
+            'price_unit': self.x_price_unit,    # para la factura hay que enviar el precio sin descuento
             'x_discount_calc_type': self.x_discount_calc_type,
             'discount': discount_percent,
             'x_amount_discount': amount_discount,
@@ -73,8 +74,9 @@ class PurchaseOrderLine(models.Model):
     def _compute_amount(self):
         res = super(PurchaseOrderLine, self)._compute_amount()
 
+        # calcula descuentos y el precio_unit con descuento incluido como lo requiere odoo
         for line in self:
-            price_subtotal = line.price_unit * line.product_qty
+            price_subtotal = line.x_price_unit * line.product_qty
             if line.x_discount:
                 x_amount_discount = float_round(price_subtotal * (line.x_discount / 100), precision_rounding=line.order_id.currency_id.rounding)
                 line.update({'x_amount_discount': x_amount_discount})
@@ -84,12 +86,14 @@ class PurchaseOrderLine(models.Model):
                 x_amount_discount = line.x_amount_discount
 
             price_subtotal = price_subtotal - x_amount_discount
+            price_unit = line.x_price_unit if float_is_zero(line.product_qty,precision_digits=5) else float_round(price_subtotal / line.product_qty, precision_digits=5)
+
             total_price_tax = 0
             for tax in line.taxes_id:
                 if tax.amount:
                     total_price_tax += (price_subtotal * tax.amount)/100
+            line.price_unit = price_unit
+            line.price_tax = total_price_tax
+            line.price_subtotal = price_subtotal
+            line.price_total = price_subtotal + total_price_tax
 
-            line.update({
-                'price_tax': total_price_tax,
-                'price_subtotal': price_subtotal,
-            })
