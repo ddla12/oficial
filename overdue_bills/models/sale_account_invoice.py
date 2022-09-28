@@ -45,5 +45,4 @@ class FaeAccountInvoice(models.Model):
                             overdue_bill_count_message += ', '
                         overdue_bill_count_message += str(amount.get('currency')) + ': ' + str(round(amount.get('amount_residual', 2))) + '\n'
                 if cant >= 1:
-                    overdue_bill_count_message += ')'
                     self.x_overdue_bill_count_message = overdue_bill_count_message

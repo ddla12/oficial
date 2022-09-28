@@ -7,7 +7,7 @@
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
             <xpath expr="//form/header" position="after">
-                <div class="alert alert-info" role="alert" style="margin-bottom:0px;"
+                <div class="alert bg-danger font-weight-bolder h5 text-center" role="alert" style="margin-bottom:0px;"
                     attrs="{'invisible':['|',('partner_id', '=', False), ('x_overdue_bill_count_message', '=', False)]}">
                     <field name="x_overdue_bill_count_message" readonly="1" nolabel="1"/>
                 </div>
