@@ -4,6 +4,11 @@ from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools import float_is_zero, float_round
 
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
@@ -26,6 +31,11 @@ class PurchaseOrderLine(models.Model):
     @staticmethod
     def calc_amount_discount(price_subtotal, discount, precision_rounding):
         return float_round(price_subtotal * (discount / 100), precision_rounding=precision_rounding)
+
+    @api.onchange('product_qty', 'product_uom')
+    def _onchange_product_qty_uom(self):
+        self._onchange_quantity()       # metodo en el modelo original
+        self.x_price_unit = self.price_unit
 
     @api.onchange('x_discount')
     def _onchange_x_discount(self):
