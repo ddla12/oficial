@@ -94,7 +94,7 @@
                     <button name="generate_xml_and_send_dgt_manual" string="Crear XML" type="object" colspan="2"
                                     attrs="{'invisible':['|',('x_state_dgt','=','ENV'), ('x_show_generate_xml_button','=',False)]}"/>
                     <button name="generate_xml_and_send_dgt_manual" string="Reenviar Hacienda" type="object" colspan="2"
-                                    attrs="{'invisible':[('x_state_dgt','!=','ENV')]}"/>
+                                    attrs="{'invisible':[('x_state_dgt','not in',('ENV','ERR'))]}"/>
                     <button name="consulta_status_doc_enviado_dgt" type="object" string="Consultar Hacienda" colspan="2"
                                     attrs="{'invisible':['|',('x_state_dgt','=', False),('x_state_dgt','not in',['PRO','FI'])]}"/>
                     <button name="action_send_mail_fae" type="object" string="Reenviar Correo" colspan="2"

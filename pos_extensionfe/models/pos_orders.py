@@ -907,7 +907,9 @@ class PosOrderInherit(models.Model):
         self.ensure_one()
         if self.company_id.x_fae_mode not in ('api-stag', 'api-prod'):
             return
-        if self.x_document_type and (not self.x_state_dgt or self.x_state_dgt in ('ENV', 'FI')):
+        if self.x_document_type and (not self.x_state_dgt or self.x_state_dgt in ('ERR', 'ENV', 'FI')):
+            if self.x_state_dgt == 'ERR':
+                self.x_state_dgt = 'ENV'
             self.generate_xml_and_send_dgt(self, True)
         return {
             'type': 'ir.actions.client',
