@@ -16,11 +16,14 @@
     'category': 'Uncategorized',
     'version': '0.1',
 
-    'depends': ['base', 'account', 'contacts', 'FAE_app'],
+    'depends': ['base', 'contacts', 'FAE_app', 'pos_extensionfe', 'purchase'],
 
     # always loaded
     'data': [
         'views/account_move_views.xml',
         'views/res_partner_views.xml',
+        'views/product_template_views.xml',
+        'views/sale_order_views.xml',
+        'report/pos_order_invoice_template.xml',
     ],
 }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_pos_order_invoice_inherit" inherit_id="pos_extensionfe.report_pos_order_invoice">
+        <xpath expr="//t[@t-if='o.x_electronic_code50']" position="after">
+            <t t-if="o.x_name_to_print">
+                <br/>
+                <span>Nombre Factura: </span>
+                <span style="font-size: 12px;" t-esc="o.x_name_to_print or o.partner_id.name" />
+            </t>
+       </xpath>
+    </template>
+</odoo>
