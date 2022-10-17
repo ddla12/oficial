@@ -40,29 +40,8 @@ class SaleOrder(models.Model):
                     break
         return pos_config_id
 
-    def send_to_pos(self):
-        if self.x_sent_to_pos:
-           raise ValidationError('Este presupuesto ya había sido enviado a caja')
-
-        # if self._get_forbidden_state_confirm() & set(self.mapped('state')):
-        #     raise ValidationError(_('It is not allowed to confirm an order in the following states: %s') % (', '.join(self._get_forbidden_state_confirm())))
-
-        if not self.x_document_type:
-            raise ValidationError('Debe seleccionar el tipo de comprobante que necesita el cliente')
-
-        # pos_config = self.env['pos.config'].search([('company_id','=', self.company_id.id),('active','=',True)], limit=1)
-        # if not pos_config:
-        #    raise ValidationError('No existe un punto de venta definido en la compañía: %s' % (self.company_id.name))
-
-        if not self.x_pos_config_id:
-            raise ValidationError('No han seleccionado la caja punto de venta destino')
-
-        opened_session = self.env['pos.session'].search([('config_id', '=', self.x_pos_config_id.id), ('state', '=', 'opened')], order='id desc')
-
-        if not opened_session:
-            raise ValidationError('No existe ninguna sesión de Punto de Venta abierta, en el punto de venta: %s ' % (pos_config.name))
-
-        data_vals = {
+    def _prepare_pos_order_data(self, opened_session):
+        order_vals = {
             'name': '/',
             'session_id': opened_session[0].id,
             'user_id': self.user_id.id,
@@ -85,12 +64,10 @@ class SaleOrder(models.Model):
             'x_sale_order_id': self.id,
             'x_economic_activity_id': self.x_economic_activity_id.id,
         }
+        return order_vals
 
-        # pos_order = self.create_pos_order(data_vals)
-        # crea el movimmiento en pos_order
-        pos_order = self.env['pos.order'].create(data_vals)
-        pos_order_id = pos_order.id
-        for line in self.order_line:
+    def _prepare_pos_order_line_data(self, pos_order_id, line):
+        if line:
             line_vals = {
                 'order_id': pos_order_id,
                 'full_product_name': line.name,
@@ -103,6 +80,40 @@ class SaleOrder(models.Model):
                 'qty': line.product_uom_qty,
                 'tax_ids': line.tax_id
             }
+            return line_vals
+        return {}
+
+
+    def send_to_pos(self):
+        if self.x_sent_to_pos:
+           raise ValidationError('Este presupuesto ya había sido enviado a caja')
+
+        # if self._get_forbidden_state_confirm() & set(self.mapped('state')):
+        #     raise ValidationError(_('It is not allowed to confirm an order in the following states: %s') % (', '.join(self._get_forbidden_state_confirm())))
+
+        if not self.x_document_type:
+            raise ValidationError('Debe seleccionar el tipo de comprobante que necesita el cliente')
+
+        pos_config = self.env['pos.config'].search([('company_id','=', self.company_id.id),('active','=',True)], limit=1)
+        # if not pos_config:
+        #    raise ValidationError('No existe un punto de venta definido en la compañía: %s' % (self.company_id.name))
+
+        if not self.x_pos_config_id:
+            raise ValidationError('No han seleccionado la caja punto de venta destino')
+
+        opened_session = self.env['pos.session'].search([('config_id', '=', self.x_pos_config_id.id), ('state', '=', 'opened')], order='id desc')
+
+        if not opened_session:
+            raise ValidationError('No existe ninguna sesión de Punto de Venta abierta, en el punto de venta: %s ' % (pos_config.name))
+
+        data_vals = self._prepare_pos_order_data(opened_session)
+
+        # pos_order = self.create_pos_order(data_vals)
+        # crea el movimiento en pos_order
+        pos_order = self.env['pos.order'].create(data_vals)
+        pos_order_id = pos_order.id
+        for line in self.order_line:
+            line_vals = self._prepare_pos_order_line_data(pos_order_id, line)
             res = self.env['pos.order.line'].create(line_vals)
 
         self.x_pos_order_id = pos_order_id

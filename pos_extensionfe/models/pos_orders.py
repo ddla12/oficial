@@ -835,7 +835,8 @@ class PosOrderInherit(models.Model):
         self.validate_pos_order_data()
 
         # self.write({'to_invoice': True, 'state': 'paid'})
-        self.x_name_to_print = self.partner_id.name
+        if not self.x_name_to_print:
+            self.x_name_to_print = self.partner_id.name
         self.x_is_partial = True  
         self.to_invoice = True
         if self.x_cashier_session_id:
@@ -865,7 +866,7 @@ class PosOrderInherit(models.Model):
             # raise ValidationError('No puede procesarse una Venta al Contado por aquí' )
             raise ValidationError('No puede procesarse una Venta a Crédito por aquí' )
 
-        if self.partner_id:
+        if self.partner_id and not self.x_name_to_print:
             self.x_name_to_print = self.partner_id.name
         self.x_is_partial = True
 

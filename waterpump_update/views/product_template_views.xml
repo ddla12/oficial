@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<odoo>
+    <record id="product_template_form_waterpump" model="ir.ui.view">
+        <field name="name">product.template.form.waterpump</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='standard_price']" position="after">
+                <field name="x_cost_is_editable" invisible="1" />
+            </xpath>
+            <xpath expr="//field[@name='standard_price']" position="attributes">
+                <attribute name="attrs">{'readonly': [('x_cost_is_editable','=',False)]}</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
