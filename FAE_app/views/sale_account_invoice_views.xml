@@ -75,9 +75,18 @@
                         attrs="{'invisible':[('move_type','!=','entry')], 'readonly':[('x_accounting_lock','=',True)]}" />
             </xpath>
 
+            <xpath expr="//form/sheet/div[2]" position="after">
+                <div class="o_td_label">
+                    <field name="x_enable_no_document_type" nolabel="1" widget="boolean_toggle"
+                            attrs="{'readonly':[('state','!=','draft')], 'invisible':[('move_type', 'not in', ('out_invoice', 'out_refund'))]}" />
+                    <label for="x_enable_no_document_type" string="Sin documento electrónico"
+                            attrs="{'invisible':[('move_type', 'not in', ('out_invoice', 'out_refund'))]}" />
+                </div>
+            </xpath>
+
             <field name="partner_id" position="attributes">
                 <attribute name="attrs">{'readonly':[('x_move_editable','=',False)], 'invisible': [('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt'))] }</attribute>
-            </field> 
+            </field>
 
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="x_accounting_lock" invisible="1"/>

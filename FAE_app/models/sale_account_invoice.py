@@ -118,7 +118,7 @@ class FaeAccountInvoice(models.Model):
     line_ids = fields.One2many('account.move.line', 'move_id', string='Journal Items', copy=True, readonly=True, )
     x_generated_dgt = fields.Boolean(compute='_compute_x_editable_generated_dgt', readonly=True)
     x_move_editable = fields.Boolean(compute='_compute_x_editable_generated_dgt', readonly=True)
-    x_accounting_lock = fields.Boolean(compute='_compute_x_editable_generated_dgt', readonly=True) 
+    x_accounting_lock = fields.Boolean(compute='_compute_x_editable_generated_dgt', readonly=True)
 
     #
     x_economic_activity_id = fields.Many2one("xeconomic.activity", string="Actividad Económica", required=False,
@@ -130,7 +130,7 @@ class FaeAccountInvoice(models.Model):
                                                 ('ND', 'Nota de Débito'),
                                                 ('NC', 'Nota de Crédito'),
                                                 ('FEC', 'Factura de Compra')],
-                                        required=False, default=_default_document_type, 
+                                        required=False, default=_default_document_type,
                                         )
     x_sequence = fields.Char(string="Núm.Consecutivo", required=False, readonly=True, copy=False, index=True)
     x_electronic_code50 = fields.Char(string="Clave Numérica", required=False, copy=False, index=True)
@@ -139,7 +139,7 @@ class FaeAccountInvoice(models.Model):
     x_state_dgt = fields.Selection(string="Estado DGT",
                                     copy=False,
                                     selection=[('PRO', 'Procesando'),
-                                               ('POS', 'Pendiente en POS'),                                    
+                                               ('POS', 'Pendiente en POS'),
                                                ('1', 'Aceptado'),
                                                ('2', 'Rechazado'),
                                                ('FI', 'Firma Inválida'),
@@ -181,7 +181,7 @@ class FaeAccountInvoice(models.Model):
 
     x_partner_vat = fields.Char(related='partner_id.vat')
     x_fae_incoming_doc_id = fields.Many2one("xfae.incoming.documents", string="Doc.Electrónico",
-                                        required=False, 
+                                        required=False,
                                         domain="[('document_type','=',x_document_type),('issuer_identification_num','=',x_partner_vat),('ready2accounting','=',True),('invoice_id','=',False)]",
                                         )
 
@@ -189,6 +189,9 @@ class FaeAccountInvoice(models.Model):
                                  help='Indica si el movimiento proviene del módulo de ventas')
     # ayuda a determinar en donde fue originado el movimiento
     x_origin_move = fields.Char(string='Origen Move', copy=False)
+
+    x_enable_no_document_type = fields.Boolean(string='Sin documento Electrónico', default=False, copy=False,
+                                 help='Indica si permite no indicar el tipo de documento electrónico')
 
     _sql_constraints = [('x_electronic_code50_uniq', 'unique (x_electronic_code50, company_id)',
                         "La clave numérica deben ser única"), ]
@@ -225,7 +228,7 @@ class FaeAccountInvoice(models.Model):
     @api.depends('state', 'x_sequence')
     def _compute_x_show_generate_xml_button(self):
         for inv in self:
-            if inv.is_sale_document():
+            if inv.is_sale_document() and not inv.x_enable_no_document_type:
                 # documentos de clientes
                 inv.x_show_generate_xml_button = False
                 if (inv.state == 'posted' and inv.x_document_type in ('FE','TE','FEE','ND','NC')
@@ -270,21 +273,21 @@ class FaeAccountInvoice(models.Model):
     @api.onchange('partner_id', 'company_id')
     def _onchange_partner_id(self):
         super(FaeAccountInvoice, self)._onchange_partner_id()
-        self.x_payment_method_id = self.partner_id.x_payment_method_id or self.x_payment_method_id
-        if self.move_type == 'out_refund':
-            self.x_document_type = 'NC'
-        elif self.partner_id and self.partner_id.x_foreign_partner:
-            self.x_document_type = 'FEE'
-        elif self.partner_id and self.partner_id.vat:
-            if self.partner_id.country_id and self.partner_id.country_id.code != 'CR':
-                self.x_document_type = 'TE'
-            elif self.partner_id.x_identification_type_id and self.partner_id.x_identification_type_id.code == '05':
-                self.x_document_type = 'TE'
+        if not self.x_enable_no_document_type:
+            self.x_payment_method_id = self.partner_id.x_payment_method_id or self.x_payment_method_id
+            if self.move_type == 'out_refund':
+                self.x_document_type = 'NC'
+            elif self.partner_id and self.partner_id.x_foreign_partner:
+                self.x_document_type = 'FEE'
+            elif self.partner_id and self.partner_id.vat:
+                if self.partner_id.country_id and self.partner_id.country_id.code != 'CR':
+                    self.x_document_type = 'TE'
+                elif self.partner_id.x_identification_type_id and self.partner_id.x_identification_type_id.code == '05':
+                    self.x_document_type = 'TE'
+                else:
+                    self.x_document_type = 'FE'
             else:
-                self.x_document_type = 'FE'
-        else:
-            self.x_document_type = 'TE'
-
+                self.x_document_type = 'TE'
         if self.is_purchase_document():
             self.x_economic_activity_id = self.partner_id.x_economic_activity_id
         else:
@@ -301,7 +304,7 @@ class FaeAccountInvoice(models.Model):
                     # cuando no se conoce al momento de la emisión se usa Efectivo
                     rec = self.env['xpayment.method'].search([('code', '=', '01')], limit=1)
                     self.x_payment_method_id = rec.id
-        else:
+        elif self.is_sale_document():
             # ventas a Clientes
             if (self.partner_id.x_special_tax_type == 'E'
                 and not (self.partner_id.x_exo_type_exoneration and self.partner_id.x_exo_date_issue
@@ -313,6 +316,12 @@ class FaeAccountInvoice(models.Model):
                     line._onchange_product_id()
                     line._onchange_price_subtotal()
                 self._recompute_dynamic_lines(recompute_all_taxes=True)
+
+    @api.onchange('x_enable_no_document_type')
+    def _onchange_enable_no_document(self):
+        for inv in self:
+            if inv.x_enable_no_document_type:
+                inv.x_document_type = False
 
     @api.onchange('x_document_type')
     def _document_type_changed(self):
@@ -456,10 +465,13 @@ class FaeAccountInvoice(models.Model):
     def action_post(self):
         # _logger.info('>> action_post: entro')
         for inv in self:
-            if not inv.is_invoice() or inv.x_state_dgt:
+            if not inv.is_invoice() or inv.x_state_dgt or (inv.x_enable_no_document_type and not inv.x_document_type):
                 inv.compute_name_value()
                 super(FaeAccountInvoice, inv).action_post()
                 continue
+            # is_invoice
+            elif not inv.x_document_type and not inv.x_enable_no_document_type:
+                raise ValidationError('El tipo de documento Electrónico es obligatorio')
             else:
                 gen_doc_electronico = False
                 if inv.company_id.x_fae_mode in ('api-stag', 'api-prod'):
