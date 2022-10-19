@@ -11,20 +11,28 @@ _logger = logging.getLogger(__name__)
 class AccountMoveReversal(models.TransientModel):
     _inherit = "account.move.reversal"
 
-    def _get_stock_type_id(self):
-        picking_type_id = None
+    def _get_default_picking_type_id(self):
+        picking_type = None
         if self.env.context['active_id']:
             move = self.env['account.move'].browse(self.env.context['active_id'])
+            order = None
             if move.move_type == 'out_invoice':
                 # por ser una factura de venta, se debe crear la recepción de los productos devueltos
-                picking_type_id = self.env['stock.picking.type'].search([('company_id', '=', self.env.company.id), ('code', '=', 'incoming')], limit=1)
+                order = self.env['sale.order'].search([('invoice_ids', 'in', move.ids)], limit=1)
             elif move.move_type == 'in_invoice':
                 # por ser una factura de compra, se debe crear una salida de los productos a devolver al proveedor
-                picking_type_id = self.env['stock.picking.type'].search([('company_id', '=', self.env.company.id), ('code', '=', 'outgoing')], limit=1)
-        return picking_type_id
+                order = self.env['purchase.order'].search([('invoice_ids', 'in', move.ids)], limit=1)
+            if order:
+                for picking in order.picking_ids:
+                    picking_type = picking.picking_type_id.return_picking_type_id
+        return picking_type
 
+    def _get_stock_picking_type_id(self):
+        return self._get_default_picking_type_id()
+
+    x_default_picking_type_id = fields.Integer(string='default tipo oper', default=_get_default_picking_type_id, store=False)
     x_picking_type_id = fields.Many2one('stock.picking.type', 'Picking Type',
-                                        default=_get_stock_type_id,
+                                        default=_get_stock_picking_type_id,
                                         help="Indica el tipo de movimiento de inventario")
 
     def _prepare_default_reversal(self, move):

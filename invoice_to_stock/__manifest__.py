@@ -8,7 +8,7 @@
     """,
     'website': "http://www.prointeccr.com",
     'license': 'LGPL-3',
-    'depends': ['base', 'account', 'sale', 'stock'],
+    'depends': ['base', 'account', 'sale', 'stock', 'sale_stock'],
     'data': [
         'views/invoice_stock_view.xml',
         'wizards/account_move_reverse_view.xml',

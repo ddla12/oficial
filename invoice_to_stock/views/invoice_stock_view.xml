@@ -14,9 +14,10 @@
 
                 <xpath expr="//field[@name='invoice_date']" position="after">
                     <field name="x_invoice_picking_id" invisible="1"/>
+                    <field name="x_origin_move" invisible="1" />
                     <field name="x_picking_type_id"
                            options="{'no_create': True}"
-                           attrs="{'invisible': [('move_type','in',('entry','out_invoice','in_invoice'))], 'readonly':[('x_picking_count', '>=', 1)]}"
+                           attrs="{'invisible': [('move_type','in',('entry','out_invoice','in_invoice'))], 'readonly':['|', ('x_picking_count', '>=', 1), ('x_origin_move', '=', 'reversal')]}"
                            domain="(context.get('default_move_type') in ('in_invoice','out_refund') and [('code', '=', 'incoming')])
                                     or (context.get('default_move_type') in ('out_invoice', 'in_refund') and [('code', '=', 'outgoing')])" />
                 </xpath>
