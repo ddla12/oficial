@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <record id="xaccount_form_account_move_inherit" model="ir.ui.view">
+            <field name="name">xaccount.form.account.move.inherit</field>
+            <field name="model">account.move</field>
+            <field name="priority">20</field>
+            <field name="inherit_id" ref="account.view_move_form"/>
+            <field name="arch" type="xml">
+                <data>
+                    <field name="invoice_date" position="attributes">
+                        <attribute name="attrs">{'invisible': [('state','=','draft')]}</attribute>
+                    </field>
+                    <button name='open_reconcile_view' position="after">
+                        <button type="object"
+                                name="action_view_sale_delivery"
+                                class="oe_stat_button"
+                                icon="fa-truck"
+                                attrs="{'invisible': [('x_delivery_count', '=', 0)]}" groups="base.group_user">
+                            <field name="x_delivery_count" widget="statinfo" string="Entregas"/>
+                        </button>
+                    </button>
+                    <field name="invoice_date" position="after">
+                        <field name="x_last_picking_date_done"
+                               attrs="{'invisible': ['|',('x_delivery_count', '=', 0), ('move_type', 'not in', ('out_invoice'))]}"/>
+                    </field>
+                </data>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="pos_order_view_form_view_inherit" model="ir.ui.view">
+            <field name="name">pos.order.view.form.view.inherit</field>
+            <field name="model">pos.order</field>
+            <field name="inherit_id" ref="pos_extensionfe.pos_extfe_pos_order_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='x_name_to_print']" position="attributes">
+                    <attribute name="readonly">0</attribute>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

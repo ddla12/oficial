@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_order_form" model="ir.ui.view">
+        <field name="name">sale.order.form</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form" />
+        <field name="priority">15</field>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="x_name_to_print" />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_sales_order_quotation_filter_waterpump" model="ir.ui.view">
+        <field name="name">sale.order.quotation.search.waterpump</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.sale_order_view_search_inherit_quotation" />
+        <field name="arch" type="xml">
+            <filter name="sales" position="after">
+                <filter name="x_sent_to_pos" string="Enviadas a POS" domain="[('x_sent_to_pos', '=', True)]"/>
+                <filter name="x_no_sent_to_pos" string="No enviadas a POS" domain="[('x_sent_to_pos', '=', False)]"/>
+            </filter>
+        </field>
+    </record>
+
+    <record id="view_sales_order_filter_inherit_waterpump" model="ir.ui.view">
+        <field name="name">sale.order.search.waterpump</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter" />
+        <field name="arch" type="xml">
+            <filter name="my_sale_orders_filter" position="after">
+                <filter name="x_sent_to_pos" string="Enviadas a POS" domain="[('x_sent_to_pos', '=', True)]"/>
+                <filter name="x_no_sent_to_pos" string="No enviadas a POS" domain="[('x_sent_to_pos', '=', False)]"/>
+            </filter>
+        </field>
+    </record>
+
+    <record id="view_order_tree_inherit_waterpump" model="ir.ui.view">
+        <field name="name">sale.order.tree</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='company_id']" position="after">
+                <field name="x_pos_order_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_order_tree_quotation_inherit_waterpump" model="ir.ui.view">
+        <field name="name">sale.order.quotation.tree</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='company_id']" position="after">
+                <field name="x_pos_order_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
