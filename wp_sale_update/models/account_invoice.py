@@ -12,17 +12,15 @@ class accountmovewp(models.Model):
 
     def _compute_last_picking_date_done(self):
         for move in self:
+            move.x_last_picking_date_done = None
             if move.move_type == 'out_invoice':
                 sale_order = move._get_sale_order()
-                if sale_order:
-                    move.x_last_picking_date_done = max(
-                            [picking_id.date_done for picking_id in sale_order.picking_ids.
-                                filtered(lambda x: x.state == 'done' and x.location_dest_id.usage == 'customer')]).\
-                                                        date() or None
-                else:
-                    move.x_last_picking_date_done = None
-            else:
-                move.x_last_picking_date_done = None
+                if sale_order and sale_order.picking_ids:
+                    picking_list = sale_order.picking_ids.filtered(
+                        lambda x: x.state == 'done' and x.location_dest_id.usage == 'customer')
+                    if picking_list:
+                        move.x_last_picking_date_done = max([picking_id.date_done for picking_id in picking_list]). \
+                                                            date() or None
 
     def _get_sale_order(self):
         self.ensure_one()
