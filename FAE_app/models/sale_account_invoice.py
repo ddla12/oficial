@@ -61,7 +61,7 @@ class FaeAccountInvoiceLine(models.Model):
     x_other_charge_partner_id = fields.Many2one("res.partner", string="Tercero otros cargos",)
     x_economic_activity_id = fields.Many2one("xeconomic.activity", string="Actividad Económica", required=False,
                                             context={'active_test': False}, )
-    # x_exoneration_id = fields.Many2one('xpartner.exoneration', string='Exoneración', copy=False)
+    x_exoneration_id = fields.Many2one('xpartner.exoneration', string='Exoneración', copy=True)
 
     @api.onchange('tax_ids')
     def _onchange_tax(self):
