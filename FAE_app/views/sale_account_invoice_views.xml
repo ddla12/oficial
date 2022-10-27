@@ -127,12 +127,6 @@
                         attrs="{'invisible':[('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))], 'readonly':[('x_move_editable','=',False)]}"/>
             </xpath>
 
-            <xpath expr="//div[@name='journal_div']" position="after">
-                <button name="action_load_lines_incoming_doc" type="object"
-                        string="Cargar Doc.Electrónico" style="background-color:#eaeded"
-                        attrs="{'invisible':['|',('x_fae_incoming_doc_id','=',False),('invoice_line_ids','=',True)]}"
-                />
-            </xpath>
 
             <xpath expr="//field[@name='invoice_line_ids']" position="attributes">
                 <attribute name="attrs">{'readonly': [('x_move_editable','=',False)]}</attribute>
