@@ -1,8 +1,8 @@
 
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 import datetime
-import pytz
+# import pytz
 
 import logging
 
@@ -23,7 +23,7 @@ class SaleOrderInherit(models.Model):
                 document_type = 'FEE'
             elif self.partner_id.vat:
                 if ((self.partner_id.country_id and self.partner_id.country_id.code != 'CR')
-                    or (self.partner_id.x_identification_type_id and self.partner_id.x_identification_type_id.code == '05')):
+                        or (self.partner_id.x_identification_type_id and self.partner_id.x_identification_type_id.code == '05')):
                     document_type = 'TE'
                 else:
                     document_type = 'FE'
@@ -31,6 +31,7 @@ class SaleOrderInherit(models.Model):
                 document_type = 'TE'
             vals['x_economic_activity_id'] = self.x_economic_activity_id
             vals['x_document_type'] = document_type
+            vals['x_from_sale'] = True
         return vals 
 
     @api.onchange('partner_id', 'company_id')

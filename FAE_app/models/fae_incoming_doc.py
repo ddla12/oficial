@@ -88,6 +88,7 @@ class XFaeIncomingDoc(models.Model):
     issuer_sequence = fields.Char(string='Número Documento', size=20)
     issuer_electronic_code50 = fields.Char(string='Clave Hacienda', size=50)
     lines_ids = fields.One2many('xfae.incoming.documents_det', 'document_id', string='Detail Lines')
+    lines_count = fields.Integer(compute='_compute_lines_count', readonly=True)
 
     issuer_xml_doc = fields.Binary(string='Documento Electrónico XML', attachment=True, store=True)
     issuer_xml_response = fields.Binary(string='Respuesta Hacienda XML', attachment=True, store=True)
@@ -104,7 +105,7 @@ class XFaeIncomingDoc(models.Model):
 
     response_state = fields.Selection(string='Respuesta a Emisor',
                                         selection=[('1', 'Aceptado'),
-                                                    ('2', 'Rechazado')],
+                                                    ('3', 'Rechazado')],
                                         default=None, )
 
     message_xml = fields.Binary(string='Mensaje XML', attachment=True, store=True)
@@ -136,17 +137,15 @@ class XFaeIncomingDoc(models.Model):
     message_accept_xml = fields.Binary(string='XML aceptación', attachment=True, store=True)
     # message_accept_xml_fname = fields.Char(string="Nombre archivo XML Aceptación", required=False, copy=False )
 
-
     send_date = fields.Datetime(string='Fecha envio')
 
     # Estos valores deben poderse asignar a "account.move.x_state_dgt"
     state_response_dgt = fields.Selection(string="Respuesta DGT", copy=False, selection=[('PRO', 'Procesando'),
                                                                                       ('1', 'Aceptado'),
-                                                                                      ('2', 'Rechazado') ])
+                                                                                      ('3', 'Rechazado') ])
     response_date = fields.Datetime(string="Fecha Respuesta", required=False)
     message_response_xml = fields.Binary(string='Mensaje de Respuesta XML', attachment=True, store=True)
     # message_response_xml_fname = fields.Char(string="Nombre archivo Respuesta DGT", required=False, copy=False )
-
 
     message_response = fields.Char(string='Mensaje Respuesta')
 
@@ -161,8 +160,10 @@ class XFaeIncomingDoc(models.Model):
     # campo para almacenar el ID del invoice que utilizó este documento
     invoice_id = fields.Integer(string="Invoice ID", copy=False, 
                                 help="Este campo es solo para almacenar el ID del invoice que lo utilizó")
-    purchase_registried = fields.Boolean(string='Bill Contabilizado', default=False,
-                                help='Indica si el documento ya fue ingresado en compras' )    
+
+    purchase_registried = fields.Boolean(string='Bill Contabilizado', compute='_compute_purchase_registried',
+                                        search="_search_purchase_registried",
+                                        help='Indica si el documento ya fue ingresado en compras')
 
     _sql_constraints = [('issuer_electronic_code50_uniq', 'unique (issuer_electronic_code50, company_id)',
                         "La clave numérica deben ser única"),
@@ -202,9 +203,23 @@ class XFaeIncomingDoc(models.Model):
         res = super(XFaeIncomingDoc, self).search_read(domain, fields, offset, limit, order)
         return res
 
+    def _search_purchase_registried(self, operator, value):
+        field_id = self.search([]).filtered(lambda x: x.purchase_registried == value)
+        return [('id', operator, [x.id for x in field_id] if field_id else False)]
+
+    def _compute_lines_count(self):
+        for rec in self:
+            rec.lines_count = len(rec.lines_ids)
+
+    def _compute_purchase_registried(self):
+        for rec in self:
+            rec.purchase_registried = True if rec.invoice_id else False
+
     @api.onchange('code_accept')
     def _onchange_code_accept(self):
-        if self.code_accept in ('A','P','R','AA'):
+        if self.response_state == '3':
+            raise ValidationError('El documento electrónico no fue aceptado por hacienda')
+        elif self.code_accept in ('A','P','R','AA'):
             if not self.company_id:
                 raise Warning('La cédula del receptor no corresponde a alguna de las compañías instaladas')
             elif not self.issuer_xml_doc:
@@ -230,6 +245,9 @@ class XFaeIncomingDoc(models.Model):
         total = round(self.amount_tax_credit + self.amount_tax_expenses,4)
         if total > (self.amount_tax or 0):
             raise Warning('El total impuestos acreditados no puede ser mayor al impuesto pagado' )
+
+    def get_name_for_bill(self):
+        return self.issuer_sequence + '-' + self.issuer_identification_num
 
     # descarga los documentos recibidos en el correo
     def read_email(self):
@@ -371,7 +389,7 @@ class XFaeIncomingDoc(models.Model):
                 _logger.info('>>   fae_incoming_doc.read_email: Cuenta: %s,  No se pudo procesar: %s correos ', server.name, str(failed))
 
         # ---
-        # revisa si hay documento que ya pueden contabilizarse porque están pasado
+        # revisa si hay documento que ya pueden contabilizarse porque están pasado de los 10días del mes siguiente
         fref = datetime.datetime.today() - datetime.timedelta(days=28)  # devuelve al mes anterior
         fref = datetime.datetime(fref.year, fref.month, 11)  # aproximadamente 10 días habiles
         date_str = fref.strftime('%Y-%m-%d')
@@ -573,6 +591,7 @@ class XFaeIncomingDoc(models.Model):
                     except Exception as e:
                         _logger.error('>> consulta_status_mar_enviado: try exception to getElementTag, Doc %s, status: %s', doc.issuer_sequence, str(status) )
 
+    # Function to reload detail lines of documents processed
     def action_reload_detail(self):
         cron = self.env['ir.cron'].sudo().search([('id', '=', self.env.ref('FAE_app.xfae_reload_incoming_doc_cron_id').id)], limit=1)
         if cron:
@@ -613,9 +632,9 @@ class XFaeIncomingDocDetail(models.Model):
     measurement_unit = fields.Char(string='Unidad Medida', size=20)
     quantity = fields.Float(string='Cantidad')
     price_unit = fields.Float(string='Precio Unitario')
-    total_amount = fields.Float(string='Monto total')
+    total_amount = fields.Float(string='Monto total', help='Cantidad por precio unitario')
     discount = fields.Float(string='Descuento')
-    subtotal = fields.Float(string='Subtotal')
+    subtotal = fields.Float(string='Subtotal', help='Total menos descuento')
     tax_net = fields.Float(string='Impuesto neto')
     line_total_amount = fields.Float(string='Monto total línea')
     tax_lines_ids = fields.One2many('xfae.incoming.documents_det_tax', 'line_incoming_document_det_id', string='Tax Detail Lines')
@@ -637,3 +656,4 @@ class XFaeIncomingDocDetailTaxes(models.Model):
     amount = fields.Float(string='Monto')
     exoneration_rate = fields.Float(string='% Exoneración')
     exoneration_amount = fields.Float(string='Exoneración')
+

@@ -214,7 +214,7 @@ class invoices_report_wizard(models.TransientModel):
             })
 
         # _logger.info('>> fae_invoice_summary_report.account_move: filtrar docs tax - electronicos.  %s ', datetime.date.today())
-        account_moves_tax = account_moves.filtered(lambda r: move.state != 'cancel'
+        account_moves_tax = account_moves.filtered(lambda r: r.state != 'cancel'
                                                              and r.x_state_dgt == '1'
                                                              and r.x_sequence)
 
@@ -300,7 +300,7 @@ class invoices_report_wizard(models.TransientModel):
                     'lines_services_canceled': lines_services_canceled,
                     })
         #
-        list_docs = sorted(docs, key=lambda r: (r.get('currency'), r.get('td') or '_', r.get('sequence') or str(r.get('id'))))
+        list_docs = sorted(docs, lambda r: (r.get('currency'), r.get('td') or '_', r.get('sequence') or str(r.get('id'))))
 
         datas = {
             'ids': [],

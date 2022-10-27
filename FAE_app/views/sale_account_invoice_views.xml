@@ -51,19 +51,22 @@
 
             <xpath expr="//button[@name='button_draft']" position="after">
                 <field name="x_move_editable" invisible="1" />
+                <field name="x_state_dgt" invisible="1"/>
                 <field name="x_show_generate_xml_button" invisible="1" />
+                <field name="x_accounting_lock" invisible="1"/>
+                <field name="x_generated_dgt" invisible="1"/>
+                <field name="x_error_count" invisible="1"/>
                 <button name="generate_xml_and_send_dgt_manual" type="object" string="Generar XML" colspan="2"
                     attrs="{'invisible':[('x_show_generate_xml_button','=',False)]}"/>
-                <button name="consulta_status_doc_enviado" type="object" string="Consultar Hacienda" colspan="2" 
+                <button name="consulta_status_doc_enviado" type="object" string="Consultar Hacienda" colspan="2"
                     attrs="{'invisible':['|',('x_state_dgt','=', False),('x_state_dgt','not in',['PRO','FI'])]}"/>
             </xpath>
-            
+
             <xpath expr="//button[@name='button_draft']" position="replace">
                 <field name="x_show_reset_to_draft_button" invisible="1" />
                 <button name="button_draft" string="Reset to Draft" type="object" groups="account.group_account_invoice"
                         attrs="{'invisible' : [('x_show_reset_to_draft_button', '=', False)]}"/>
             </xpath>
-
 
             <xpath expr="//label[@for='ref']" position="replace" />
             <xpath expr="//field[@name='ref']" position="replace" />
@@ -89,16 +92,13 @@
             </field>
 
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="x_accounting_lock" invisible="1"/>
-                <field name="x_generated_dgt" invisible="1"/>
-                <field name="x_move_editable" invisible="1"/>
                 <field name="x_partner_vat" invisible="1" />
-                <field name="x_economic_activity_id" 
+                <field name="x_economic_activity_id"
                         attrs="{'invisible':[('move_type', 'not in', ('out_invoice', 'out_refund'))], 'readonly':[('x_move_editable','=',False)]}" />
-                <field name="x_document_type" 
+                <field name="x_document_type"
                         attrs="{'invisible':[('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))], 'readonly':[('x_move_editable','=',False)]}" />
-                <field name="x_fae_incoming_doc_id" 
-                        attrs="{'invisible':['|',('x_document_type','in',(False,'FEC')), ('move_type', 'not in', ('in_invoice', 'in_refund'))] }" 
+                <field name="x_fae_incoming_doc_id"
+                        attrs="{'invisible':['|',('x_document_type','in',(False,'FEC')), ('move_type', 'not in', ('in_invoice', 'in_refund'))] }"
                         options="{'no_create':True, 'no_create_edit':True, 'no_open':False}" />
                 <field name="x_sequence"
                         attrs="{'invisible':[('move_type','not in',('out_invoice','out_refund')),('x_document_type','!=','FEC')], 'readonly':['|',('move_type','in',('out_invoice','out_refund')),('x_document_type','==','FEC')]}"/>
@@ -121,15 +121,21 @@
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name="x_issue_date" attrs="{'invisible':[('move_type','not in',('out_invoice','out_refund')), ('x_document_type','!=','FEC')], 'readonly':True}"/>
                 <field name="x_state_dgt"  attrs="{'invisible':[('move_type','not in',('out_invoice','out_refund')), ('x_document_type','!=','FEC')], 'readonly':True}"/>
-                <field name="x_payment_method_id" 
+                <field name="x_payment_method_id"
                         attrs="{'invisible':[('move_type','not in',('out_invoice','out_refund'))], 'required':[('x_document_type','!=',False),('move_type','=','out_invoice')], 'readonly':[('x_move_editable','=',False)]}"/>
-                <field name="x_reference_code_id" options="{'no_open': True}" 
+                <field name="x_reference_code_id" options="{'no_open': True}"
                         attrs="{'invisible':[('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))], 'readonly':[('x_move_editable','=',False)]}"/>
-                <field name="x_error_count" invisible="1"/>
+            </xpath>
+
+            <xpath expr="//div[@name='journal_div']" position="after">
+                <button name="action_load_lines_incoming_doc" type="object"
+                        string="Cargar Doc.Electrónico" style="background-color:#eaeded"
+                        attrs="{'invisible':['|',('x_fae_incoming_doc_id','=',False),('invoice_line_ids','=',True)]}"
+                />
             </xpath>
 
             <xpath expr="//field[@name='invoice_line_ids']" position="attributes">
-                <attribute name="attrs">{'readonly': [('x_move_editable','=',False)]}</attribute>                
+                <attribute name="attrs">{'readonly': [('x_move_editable','=',False)]}</attribute>
             </xpath>
 
             <xpath expr="//field[@name='invoice_line_ids']//tree//field[@name='name']" position="after">
@@ -145,6 +151,12 @@
             <xpath expr="//field[@name='line_ids']" position="attributes">
                 <attribute name="attrs">{'readonly': ['|',('x_accounting_lock', '=', True),('state','!=','draft')],
                      'invisible': [('payment_state','=','invoicing_legacy'), ('move_type','!=','entry')]}</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='line_ids']/tree/field[@name='credit']" position="after">
+                <field name="x_other_charge_partner_id" invisible="1"/>
+                <field name="x_discount_note" invisible="1"/>
+                <field name="x_exoneration_id" invisible="1"/>
             </xpath>
 
             <!-- Agrega tab de referencias y FAE-information -->
@@ -187,7 +199,6 @@
             <xpath expr="//group[@id='other_tab_group']//field[@name='fiscal_position_id']" position="attributes">
                 <attribute name="attrs">{'readonly':[('x_move_editable','=',False)]}</attribute>
             </xpath>
-
         </field>
     </record>
 
