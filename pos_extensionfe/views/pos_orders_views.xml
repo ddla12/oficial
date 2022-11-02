@@ -56,6 +56,10 @@
                     <field name="x_state_dgt" />
                     <!-- <field name="employee_id" string="Vendedor" /> -->
                 </field>
+                <field name="amount_total" position="before">
+                    <field name="x_amount_untaxed" string="Sub.Total" widget="monetary" optional="hide"/>
+                    <field name="amount_tax" sum="Impuesto" widget="monetary" optional="hide"/>
+                </field>
                 <field name="state" position="after">
                     <field name="x_is_express" optional="show" />
                     <field name="x_amount_return_total" optional="hide" />
@@ -140,7 +144,7 @@
                             </div>
                             <field name="x_amount_return_total" readonly="1" attrs="{'invisible':[('x_amount_return_total','=',0)]}"/>
 
-                            <label for="x_state_dgt" />
+                            <label for="x_state_dgt"/>
                             <div class="o_row">
                                 <field name="x_state_dgt" class="oe_inline" readonly="1"/>
                                 <label for="x_rejection_processed" string="Reprocesado" style="font-weight:bold; margin-left:10px"
