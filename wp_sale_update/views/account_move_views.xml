@@ -7,7 +7,7 @@
             <field name="inherit_id" ref="account.view_invoice_tree"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='invoice_date_due']" position="attributes">
-                    <attribute name="string">Días vencimiento</attribute>
+                    <attribute name="string">Dias vencimiento</attribute>
                     <attribute name="optional">hide</attribute>
                 </xpath>
             </field>
