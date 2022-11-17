@@ -20,7 +20,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='invoice_date']" position="after">
                     <field name="invoice_date_due" optional="show" string="Fecha Vencimiento"/>
-                    <field name="x_due_days_count" optional="hide" string="Días atraso pago"/>
+                    <field name="x_due_days_count" optional="hide" string="Dias atraso pago"/>
                 </xpath>
             </field>
         </record>
