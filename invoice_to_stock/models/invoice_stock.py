@@ -41,7 +41,19 @@ class AccountMoveReversal(models.TransientModel):
         return data
 
 
-class xInvoiceStock(models.Model):
+class xStockPicking(models.Model):
+    _inherit = 'stock.picking'
+
+    x_account_move_id = fields.Integer(string='account move id')
+
+
+class xStockMove(models.Model):
+    _inherit = 'stock.move'
+
+    x_account_move_line_id = fields.Integer(string='account move line id')
+
+
+class xAccountMove(models.Model):
     _inherit = 'account.move'
 
     def _get_stock_type_id(self):
@@ -68,12 +80,12 @@ class xInvoiceStock(models.Model):
             r.x_picking_code = {'out_invoice': 'outgoing', 'in_invoice': 'incoming'}.get(r.move_type)
 
     def action_post(self):
-        res = super(xInvoiceStock, self).action_post()
+        res = super(xAccountMove, self).action_post()
         for move in self:
             if not move.x_from_sale and move.x_picking_type_id and not move.x_invoice_picking_id:
                 # El picking de facturación solo se hace para Notas de Credito
                 if move.move_type in ('out_refund', 'in_refund'):
-                    move._create_stock_picking()
+                    move.create_stock_picking()
                 elif  move.move_type in ('out_invoice','in_invoice'):
                     move.x_picking_type_id = None
         return res
@@ -83,37 +95,38 @@ class xInvoiceStock(models.Model):
             return
         if not self.x_picking_type_id:
             raise ValidationError("Debe seleccionar el tipo de picking")
-        self._create_stock_picking()
+        self.create_stock_picking()
 
-    def _create_stock_picking(self):
-        data = {}
+    def create_stock_picking(self):
         if len(self.invoice_line_ids.filtered(lambda r: r.product_id.type in ('consu', 'product'))) == 0:
             return
-        if self.x_picking_type_id.code == 'outgoing':
-            data = {
-                'location_dest_id': self.partner_id.property_stock_customer.id,
-                'location_id': self.x_picking_type_id.default_location_src_id.id,
-                }
-        elif self.x_picking_type_id.code == 'incoming':
-            data = {
-                'location_dest_id': self.x_picking_type_id.default_location_dest_id.id,
-                'location_id': self.partner_id.property_stock_supplier.id,
-                }
-        if data:
-            data.update({
+        if self.move_type == 'out_refund':
+            location_id = self.partner_id.property_stock_customer.id
+            location_dest_id = self.x_picking_type_id.default_location_dest_id.id
+        elif self.move_type == 'in_refund':
+            location_id = self.partner_id.property_stock_supplier.id
+            location_dest_id = self.x_picking_type_id.default_location_dest_id.id
+        else:
+            raise ValidationError("Se espera que el código de tipo de operación sea de 'Entrega' o 'Recibo'")
+        if not location_dest_id:
+            raise ValidationError("El tipo de operación: %s, no tiene configurado la localización destino")
+        data = {
+                'x_account_move_id': self.id,
+                'location_id': location_id,
+                'location_dest_id': location_dest_id,
                 'picking_type_id': self.x_picking_type_id.id,
                 'partner_id': self.partner_id.id,
                 'origin': self.name,
                 'move_type': 'direct'
-                })
+                }
 
-            picking = self.env['stock.picking'].create(data)
-            self.x_invoice_picking_id = picking.id
-            self.x_picking_count = len(picking)
+        picking = self.env['stock.picking'].create(data)
+        self.x_invoice_picking_id = picking.id
+        self.x_picking_count = len(picking)
 
-            moves = self.invoice_line_ids.filtered(lambda r: r.product_id.type in ['product', 'consu'])._create_stock_moves(picking)
-            move_ids = moves._action_confirm()
-            move_ids._action_assign()
+        moves = self.invoice_line_ids.filtered(lambda r: r.product_id.type in ['product', 'consu']).line_create_stock_moves(picking)
+        move_ids = moves._action_confirm()
+        move_ids._action_assign()
 
     def action_view_picking(self):
         action = self.env.ref('stock.action_picking_tree_ready')
@@ -129,25 +142,18 @@ class xInvoiceStock(models.Model):
         return result
 
 
-class xInvoiceStockLine(models.Model):
+class xAccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 
-    def _create_stock_moves(self, picking):
+    def line_create_stock_moves(self, picking):
         moves = self.env['stock.move']
         done = self.env['stock.move'].browse()
         for line in self:
             price_unit = line.price_unit
-            if picking.picking_type_id.code == 'outgoing':
-                data = {
-                    'location_id': picking.picking_type_id.default_location_src_id.id,
-                    'location_dest_id': line.move_id.partner_id.property_stock_customer.id,
-                }
-            if picking.picking_type_id.code == 'incoming':
-                data = {
-                    'location_id': line.move_id.partner_id.property_stock_supplier.id,
-                    'location_dest_id': picking.picking_type_id.default_location_dest_id.id,
-                }
-            data.update({
+            data = {
+                'x_account_move_line_id': line.id,
+                'location_id': picking.location_id.id,
+                'location_dest_id': picking.location_dest_id.id,
                 'name': line.name or '',
                 'product_id': line.product_id.id,
                 'product_uom': line.product_uom_id.id,
@@ -159,7 +165,7 @@ class xInvoiceStockLine(models.Model):
                 'route_ids': 1 and [
                     (6, 0, [x.id for x in self.env['stock.location.route'].search([('id', 'in', (2, 3))])])] or [],
                 'warehouse_id': picking.picking_type_id.warehouse_id.id,
-                })
+                }
             diff_quantity = line.quantity
             tmp = data.copy()
             tmp.update({
