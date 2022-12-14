@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_sale_template_inherit" inherit_id="sale.report_saleorder_document">
+        <xpath expr="//t/t[@t-set='address']/div[@t-field='doc.partner_id']" position="replace">
+            <t t-if="doc.partner_id.name == 'CLIENTE CONTADO'">
+                <div t-field="doc.x_name_to_print"/>
+            </t>
+            <t t-if="doc.partner_id.name != 'CLIENTE CONTADO'">
+                <div t-field="doc.partner_id"
+                     t-options='{"widget": "contact", "fields": ["address", "name"], "no_marker": True}'/>
+            </t>
+        </xpath>
+    </template>
+</odoo>
