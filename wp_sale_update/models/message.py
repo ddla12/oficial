@@ -19,7 +19,7 @@ class PettyCashConfirm(models.TransientModel):
     model_data_id = fields.Integer()
 
     def set_alert(self, message, type_message, model_type, function, id):
-        action = self.env.ref('millenium_purchase_update.action_message_alert')
+        action = self.env.ref('wp_sale_update.action_message_alert')
         result = action.read()[0]
         if message != 'message':
             message_id = self.create(
