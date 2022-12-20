@@ -12,7 +12,7 @@
     'author': "PROINTEC",
     'website': "http://www.prointeccr.com",
     'license': 'LGPL-3',
-    'depends': ['base', 'FAE_app', 'pos_extensionfe', 'purchase', 'stock_account'],
+    'depends': ['base', 'FAE_app', 'pos_extensionfe', 'purchase', 'stock_account','sale'],
     'data': [
         'views/account_move_views.xml',
         'views/pos_order_views.xml',
