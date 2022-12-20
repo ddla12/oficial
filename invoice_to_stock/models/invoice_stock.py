@@ -170,7 +170,7 @@ class xAccountMoveLine(models.Model):
             #         'location_dest_id': picking.picking_type_id.default_location_dest_id.id,
             #         'location_id': line.move_id.partner_id.property_stock_supplier.id,
             #     }
-                data = {
+            data = {
                 'x_account_move_line_id': line.id,
                 'location_id': picking.location_id.id,
                 'location_dest_id': picking.location_dest_id.id,
