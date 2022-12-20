@@ -135,8 +135,8 @@ class xAccountMove(models.Model):
             self.x_picking_count = len(picking)
 
         moves = self.invoice_line_ids.filtered(lambda r: r.product_id.type in ['product', 'consu']).line_create_stock_moves(picking)
-            move_ids = moves._action_confirm()
-            move_ids._action_assign()
+        move_ids = moves._action_confirm()
+        move_ids._action_assign()
 
     def action_view_picking(self):
         action = self.env.ref('stock.action_picking_tree_ready')
