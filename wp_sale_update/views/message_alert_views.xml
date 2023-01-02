@@ -1,0 +1,30 @@
+<odoo>
+    <data>
+        <record id="message_alert_confirm_form_view" model="ir.ui.view">
+            <field name="name">xmessage_alert_confirm_form_view</field>
+            <field name="model">message.alert</field>
+            <field name="arch" type="xml">
+                <form create="false" edit="false">
+                    <p>
+                        <field name="message"/>
+                    </p>
+                    <footer>
+                        <button string="Confirmar" name="confirm" type="object"/>
+                        <button string="Cancel" class="btn-default" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- action-->
+        <record id="action_message_alert" model="ir.actions.act_window">
+            <field name="name">Alerta</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">message.alert</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="message_alert_confirm_form_view"/>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>
