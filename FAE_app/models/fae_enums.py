@@ -8,11 +8,13 @@ dgt_url_token = {
   'api-prod' : 'https://idp.comprobanteselectronicos.go.cr/auth/realms/rut/protocol/openid-connect/token',
 }
 
+
 dgt_url = {
-  'api-stag' : 'https://api.comprobanteselectronicos.go.cr/recepcion-sandbox/v1/recepcion/',
-  'api-prod' : 'https://api.comprobanteselectronicos.go.cr/recepcion/v1/recepcion/',
-  'api-ae'   : 'https://api.hacienda.go.cr/fe/ae?identificacion=', 
-  'api-ex'   : 'https://api.hacienda.go.cr/fe/ex?autorizacion=',
+  # 'api-stag' : 'https://api.comprobanteselectronicos.go.cr/recepcion-sandbox/v1/recepcion/',  deshabilitada desde Jun-2022
+  'api-stag': 'https://api-sandbox.comprobanteselectronicos.go.cr/recepcion/v1/',
+  'api-prod': 'https://api.comprobanteselectronicos.go.cr/recepcion/v1/recepcion/',
+  'api-ae':   'https://api.hacienda.go.cr/fe/ae?identificacion=',
+  'api-ex':   'https://api.hacienda.go.cr/fe/ex?autorizacion=',
 }
 
 

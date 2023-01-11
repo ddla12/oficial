@@ -10,7 +10,7 @@
                     <field name="x_tax_code_id" options="{'no_open': True, 'no_create': True}"/>
                 </field>
                 <xpath expr="//form/sheet/group/*/div[span]" position="after">
-                    <field name="x_tax_rate_id" options="{'no_open': True, 'no_create': True}" attrs="{'invisible': [('type_tax_use', '!=', 'sale')]}"/>
+                    <field name="x_tax_rate_id" options="{'no_open': True, 'no_create': True}" attrs="{'invisible': [('type_tax_use', 'not in', ('sale','purchase'))]}"/>
                     <div colspan="2" col="2">
                         <div style="width:65%;display:inline-block;" attrs="{'invisible': [('type_tax_use', '!=', 'sale')]}">
                             <label for="x_has_exoneration" style="font-weight:bold;margin-right:90px;"/>

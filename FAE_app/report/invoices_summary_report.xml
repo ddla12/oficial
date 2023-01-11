@@ -107,9 +107,11 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <t t-set="total_amount_dol" t-value="0" />
                                     <t t-set="total_tax_amount" t-value="0" />
                                     <t t-set="total_amount" t-value="0" />
                                     <t t-foreach="lae['lines_gppds_with_doc']" t-as="line">
+                                        <t t-set="total_amount_dol" t-value="total_amount_dol + line['subtotal_dol']"/>
                                         <t t-set="total_tax_amount" t-value="total_tax_amount + line['tax_amount']"/>
                                         <t t-set="total_amount" t-value="total_amount + line['total']"/>
                                         <tr style="font-size:12px">
@@ -130,10 +132,11 @@
                                             </td>
                                         </tr>
                                     </t>
-                                    <tr style="font-size:12px">
-                                        <td colspan="2" />
-                                        <td class="text-right" ><strong>TOTALES</strong>
+                                    <tr style="font-size:12px; border-top: 1px solid #dee2e6">
+                                        <td class="text-right">
+                                            <span t-esc="total_amount_dol" t-options="{'widget': 'float', 'precision': 2}"/>
                                         </td>
+                                        <td colspan="2" class="text-right"><strong>TOTALES</strong></td>
                                         <td class="text-right" >
                                             <span t-esc="total_tax_amount" t-options="{'widget': 'float', 'precision': 2}"/>
                                         </td>
@@ -157,9 +160,11 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <t t-set="total_amount_dol" t-value="0" />
                                     <t t-set="total_tax_amount" t-value="0" />
                                     <t t-set="total_amount" t-value="0" />
                                     <t t-foreach="lae['lines_services_with_doc']" t-as="line">
+                                        <t t-set="total_amount_dol" t-value="total_amount_dol + line['subtotal_dol']"/>
                                         <t t-set="total_tax_amount" t-value="total_tax_amount + line['tax_amount']"/>
                                         <t t-set="total_amount" t-value="total_amount + line['total']"/>
                                         <tr style="font-size:12px">
@@ -180,11 +185,11 @@
                                             </td>
                                         </tr>
                                     </t>
-                                    <tr style="font-size:12px">
-                                        <td colspan="2" />
+                                    <tr style="font-size:12px; border-top: 1px solid #dee2e6">
                                         <td class="text-right" >
-                                            <strong>TOTALES</strong>
+                                            <span t-esc="total_amount_dol" t-options="{'widget': 'float', 'precision': 2}"/>
                                         </td>
+                                        <td colspan="2" class="text-right" ><strong>TOTALES</strong></td>
                                         <td class="text-right" >
                                             <span t-esc="total_tax_amount" t-options="{'widget': 'float', 'precision': 2}"/>
                                         </td>
@@ -212,9 +217,11 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        <t t-set="total_amount_dol" t-value="0" />
                                         <t t-set="total_tax_amount" t-value="0" />
                                         <t t-set="total_amount" t-value="0" />
                                         <t t-foreach="lae['lines_gppds_not_doc']" t-as="line">
+                                            <t t-set="total_amount_dol" t-value="total_amount_dol + line['subtotal_dol']"/>
                                             <t t-set="total_tax_amount" t-value="total_tax_amount + line['tax_amount']"/>
                                             <t t-set="total_amount" t-value="total_amount + line['total']"/>
                                             <tr style="font-size:12px">
@@ -235,11 +242,11 @@
                                                 </td>
                                             </tr>
                                         </t>
-                                        <tr style="font-size:12px">
-                                            <td colspan="2" />
+                                        <tr style="font-size:12px; border-top: 1px solid #dee2e6">
                                             <td class="text-right" >
-                                            <strong>TOTALES</strong>
+                                                <span t-esc="total_amount_dol" t-options="{'widget': 'float', 'precision': 2}"/>
                                             </td>
+                                            <td colspan="2" class="text-right" ><strong>TOTALES</strong></td>
                                             <td class="text-right" >
                                             <span t-esc="total_tax_amount" t-options="{'widget': 'float', 'precision': 2}"/>
                                             </td>
@@ -263,10 +270,11 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        <t t-set="total_amount_dol" t-value="0" />
                                         <t t-set="total_tax_amount" t-value="0" />
                                         <t t-set="total_amount" t-value="0" />
-
                                         <t t-foreach="lae['lines_services_not_doc']" t-as="line">
+                                            <t t-set="total_amount_dol" t-value="total_amount_dol + line['subtotal_dol']"/>
                                             <t t-set="total_tax_amount" t-value="total_tax_amount + line['tax_amount']"/>
                                             <t t-set="total_amount" t-value="total_amount + line['total']"/>
                                             <tr style="font-size:12px">
@@ -287,10 +295,11 @@
                                             </td>
                                             </tr>
                                         </t>
-                                        <tr style="font-size:12px">
-                                            <td colspan="2" />
-                                            <td class="text-right" ><strong>TOTALES</strong>
+                                        <tr style="font-size:12px; border-top: 1px solid #dee2e6">
+                                            <td class="text-right" >
+                                                <span t-esc="total_amount_dol" t-options="{'widget': 'float', 'precision': 2}"/>
                                             </td>
+                                            <td colspan="2" class="text-right" ><strong>TOTALES</strong></td>
                                             <td class="text-right" >
                                             <span t-esc="total_tax_amount" t-options="{'widget': 'float', 'precision': 2}"/>
                                             </td>
@@ -327,18 +336,24 @@
                             <t t-set="total_tax" t-value="0" />
                             <t t-set="total_amount" t-value="0" />
                             <t t-set="total_amount_accepted" t-value="0" />
+                            <t t-set="total_amount_col_accepted" t-value="0" />
                             <t t-set="currency_ant" t-value="'.'" />
                             <t t-set="currency_symbol_ant" t-value="'.'" />
                             <t t-foreach="list_docs" t-as="line">
                                 <t t-if="currency_ant != line['currency']">
                                     <t t-if="currency_ant != '.'">
                                         <tr style="font-size:11px">
-                                            <td colspan="5" class="text-left">
+                                            <td colspan="6" class="text-left">
                                                 <strong>Total aceptado por Hacienda: </strong>
                                                 <span t-esc="currency_symbol_ant"/>
                                                 <span t-esc="total_amount_accepted" t-options="{'widget': 'float', 'precision': 2}"/>
+                                                <t t-if="currency_ant != 'CRC'">
+                                                    <strong>&#160;&#160;&#160;equivale a:</strong>
+                                                    <span t-esc="symbol_col"/>
+                                                    <span t-esc="total_amount_col_accepted" t-options="{'widget': 'float', 'precision': 2}"/>
+                                                </t>
                                             </td>
-                                            <td colspan="3" class="text-right" >
+                                            <td colspan="2" class="text-right" >
                                                 <strong>TOTALES</strong>
                                             </td>
                                             <td class="text-right" >
@@ -360,11 +375,13 @@
                                     <t t-set="total_tax" t-value="0" />
                                     <t t-set="total_amount" t-value="0" />
                                     <t t-set="total_amount_accepted" t-value="0" />
+                                    <t t-set="total_amount_col_accepted" t-value="0" />
                                 </t>
                                 <t t-set="total_amount" t-value="total_amount + line['amount_total']"/>
                                 <t t-set="total_tax" t-value="total_tax + line['amount_tax']" />
                                 <t t-if="line['state_dgt']=='A'">
                                     <t t-set="total_amount_accepted" t-value="total_amount_accepted + line['amount_total']"/>
+                                    <t t-set="total_amount_col_accepted" t-value="total_amount_col_accepted + line['amount_total_col']"/>
                                 </t>
                                 <tr style="font-size:11px">
                                     <td class="text-left">
@@ -407,12 +424,17 @@
                                 </tr>
                             </t>
                             <tr style="font-size:11px">
-                                <td colspan="5" class="text-left">
+                                <td colspan="6" class="text-left">
                                     <strong>Total aceptado por Hacienda: </strong>
                                     <span t-esc="currency_symbol_ant"/>
                                     <span t-esc="total_amount_accepted" t-options="{'widget': 'float', 'precision': 2}"/>
+                                    <t t-if="currency_ant != 'CRC'">
+                                        <strong>&#160;&#160;&#160;equivale a:</strong>
+                                        <span t-esc="symbol_col"/>
+                                        <span t-esc="total_amount_col_accepted" t-options="{'widget': 'float', 'precision': 2}"/>
+                                    </t>
                                 </td>
-                                <td colspan="3" class="text-right" >
+                                <td colspan="2" class="text-right" >
                                     <strong>TOTALES</strong>
                                 </td>
                                 <td class="text-right" >

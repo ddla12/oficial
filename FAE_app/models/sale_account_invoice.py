@@ -8,6 +8,8 @@ import time
 import pytz
 import json
 
+from lxml import etree
+
 from . import fae_utiles
 from . import fae_enums
 
@@ -21,19 +23,32 @@ class AccountMoveReversal(models.TransientModel):
     _inherit = "account.move.reversal"
 
     def _prepare_default_reversal(self, move):
-        data = super(AccountMoveReversal, self)._prepare_default_reversal(move)
+        reverse_date = self.date if self.date_mode == 'custom' else move.date
         document_type_dest = None
         if move.move_type == 'out_invoice' and move.x_state_dgt not in ('2', 'FI'):
             document_type_dest = 'NC'
         elif move.move_type == 'out_refund' and move.x_state_dgt not in ('2', 'FI'):
             document_type_dest = 'ND'
+        name = None
         if move.x_state_dgt != '1':
             name = move._compute_name_value(move.company_id.id, 'out_refund')
         else:
             name = move._compute_name_value_temp(move.company_id.id)
-        data['name'] = name if name else '/'
+
+        data =  {
+            'name': name if name else '/',
+            'ref': _('Reversal of: %(move_name)s, %(reason)s', move_name=move.name, reason=self.reason)
+                   if self.reason
+                   else _('Reversal of: %s', move.name),
+            'date': reverse_date,
+            'invoice_date': move.is_invoice(include_receipts=True) and (self.date or move.date) or False,
+            'journal_id': self.journal_id and self.journal_id.id or move.journal_id.id,
+            'invoice_payment_term_id': None,
+            'invoice_user_id': move.invoice_user_id.id,
+            'auto_post': True if reverse_date > fields.Date.context_today(self) else False,
+            }
+
         data['x_document_type'] = document_type_dest
-        data['x_origin_move'] = 'reversal'       # Wizard_reversal
         if document_type_dest:
             rec_reference_code = self.env['xreference.code'].search([('code', '=', '01')], limit=1)
             ref_docum_code = fae_enums.tipo_doc_num.get(move.x_document_type)
@@ -66,16 +81,55 @@ class FaeAccountInvoiceLine(models.Model):
     @api.onchange('tax_ids')
     def _onchange_tax(self):
         move = self.move_id
-        if not move.is_sale_document():
+        if not move.is_sale_document() or not(self.product_id or self.name):
             return
-        for tax in self.tax_ids:
-            if tax.x_has_exoneration:
-                if not move.partner_id:
-                    raise ValidationError('El impuesto: %s es para exoneración pero el documento no le han definido un cliente' % tax.name)
-                if move.partner_id.x_special_tax_type != 'E':
-                    raise ValidationError('El impuesto: %s es para exoneración pero el cliente no tiene definido que es exonerado' % tax.name)
-                if not move.partner_id.property_account_position_id:
-                    raise ValidationError('El impuesto: %s es para exoneración pero el cliente no tiene definido la posición fiscal' % tax.name)
+        exonerated = False
+        exoneration = None
+        if self.tax_ids:
+            today = datetime.date.today()
+            exoneration = move.partner_id.get_exoneration_by_cabys(today, self.product_id.x_cabys_code_id)
+            tax_ids = self.tax_ids
+            for tax in tax_ids:
+                if tax.x_has_exoneration:
+                    if not move.partner_id:
+                        raise ValidationError('El impuesto: %s es para exoneración pero el documento no le han definido un cliente' % tax.name)
+                    # if move.partner_id.x_special_tax_type != 'E':
+                    #     raise ValidationError('El impuesto: %s es para exoneración pero el cliente no tiene definido que es exonerado, prod: %s, cta: %s'
+                    #                           % (tax.name, (self.product_id and self.product_id.default_code), (self.account_id and self.account_id.code)))
+                    if move.partner_id.x_exo_modality != 'M' and not move.partner_id.property_account_position_id:
+                        raise ValidationError('El impuesto: %s es para exoneración pero el cliente no tiene definido la posición fiscal' % tax.name)
+                    elif move.partner_id.x_exo_modality == 'M' and not exoneration:
+                        raise ValidationError('El impuesto: %s es para exoneración pero el CAByS del producto no está presente en alguna exoneración del cliente' % tax.name)
+                    if exoneration:
+                        if tax.id.origin != exoneration.account_tax_id.id:
+                            tax_ids -= tax  # quita el tax exonerado que no corresponde con el de la exoneración
+                        if exoneration.account_tax_id not in tax_ids:
+                            exonerated = True
+                            # tax_ids += exoneration.account_tax_id
+                            tax_ids = exoneration.account_tax_id
+            self.tax_ids = tax_ids
+        self.x_exoneration_id = exoneration.id if exonerated and exoneration else None
+
+    def _get_computed_taxes(self):
+        self.ensure_one()
+        tax_ids = super()._get_computed_taxes()
+        move = self.move_id
+        if move.is_sale_document(include_receipts=True):
+            today = datetime.date.today()
+            exoneration = None
+            exonerated = False
+            if move.partner_id.x_special_tax_type == 'E' and move.partner_id.x_exo_modality == 'M' and self.product_id.x_cabys_code_id:
+                exoneration = move.partner_id.get_exoneration_by_cabys(today, self.product_id.x_cabys_code_id)
+                if exoneration:
+                    for tax in tax_ids:
+                        if tax.amount > exoneration.account_tax_id.amount:
+                            tax_ids -= tax      # quita el tax de la lista para agregar el nuevo
+                            if exoneration.account_tax_id not in tax_ids:
+                                exonerated = True
+                                # tax_ids += exoneration.account_tax_id
+                                tax_ids = exoneration.account_tax_id
+            self.x_exoneration_id = exoneration.id if exonerated and exoneration else None
+        return tax_ids
 
     @api.onchange('debit')
     def _onchange_debit(self):
@@ -182,8 +236,8 @@ class FaeAccountInvoice(models.Model):
     x_partner_vat = fields.Char(related='partner_id.vat')
     x_fae_incoming_doc_id = fields.Many2one("xfae.incoming.documents", string="Doc.Electrónico",
                                         required=False,
-                                        domain="[('document_type','=',x_document_type),('issuer_identification_num','=',x_partner_vat),('ready2accounting','=',True),('invoice_id','=',False)]",
-                                        )
+                                        domain="[('document_type','=',x_document_type),('issuer_identification_num','=',x_partner_vat),"
+                                               "('company_id','=',company_id),('ready2accounting','=',True),('invoice_id','=',False)]")
 
     x_from_sale = fields.Boolean(string='Origen Ventas', default=False, copy=False,
                                  help='Indica si el movimiento proviene del módulo de ventas')
@@ -204,6 +258,19 @@ class FaeAccountInvoice(models.Model):
                 rec.x_fae_incoming_doc_id.invoice_id = False
         res = super(FaeAccountInvoice, self).unlink()
         return res
+
+    @api.returns('self', lambda value: value.id)
+    def copy(self, default=None):
+        move = super(FaeAccountInvoice, self).copy(default)
+        if move.is_sale_document(include_receipts=True) and move.partner_id.x_special_tax_type == 'E':
+            for line in move.invoice_line_ids:
+                exonerated = False
+                for tax in line.tax_ids:
+                    if tax.x_has_exoneration:
+                        exonerated = True
+                if exonerated:
+                    line.tax_ids = line._get_computed_taxes()
+        return move
 
     @api.depends('state', 'x_sequence')
     def _compute_x_editable_generated_dgt(self):
@@ -277,20 +344,21 @@ class FaeAccountInvoice(models.Model):
             self.x_payment_method_id = self.partner_id.x_payment_method_id or self.x_payment_method_id
             if self.move_type == 'out_refund':
                 self.x_document_type = 'NC'
-            elif self.partner_id and self.partner_id.x_foreign_partner:
-                self.x_document_type = 'FEE'
-            elif self.partner_id and self.partner_id.vat:
-                if self.partner_id.country_id and self.partner_id.country_id.code != 'CR':
-                    self.x_document_type = 'TE'
-                elif self.partner_id.x_identification_type_id and self.partner_id.x_identification_type_id.code == '05':
-                    self.x_document_type = 'TE'
+            elif self.is_sale_document():
+                if self.partner_id and self.partner_id.x_foreign_partner:
+                    self.x_document_type = 'FEE'
+                elif self.partner_id and self.partner_id.vat:
+                    if self.partner_id.country_id and self.partner_id.country_id.code != 'CR':
+                        self.x_document_type = 'TE'
+                    elif self.partner_id.x_identification_type_id and self.partner_id.x_identification_type_id.code == '05':
+                        self.x_document_type = 'TE'
+                    else:
+                        self.x_document_type = 'FE'
                 else:
-                    self.x_document_type = 'FE'
-            else:
-                self.x_document_type = 'TE'
+                    self.x_document_type = 'TE'
         if self.is_purchase_document():
             self.x_economic_activity_id = self.partner_id.x_economic_activity_id
-        else:
+        elif self.is_sale_document():
             self.x_economic_activity_id = self.company_id.x_economic_activity_id
 
     @api.onchange('partner_id')
@@ -306,13 +374,14 @@ class FaeAccountInvoice(models.Model):
                     self.x_payment_method_id = rec.id
         elif self.is_sale_document():
             # ventas a Clientes
-            if (self.partner_id.x_special_tax_type == 'E'
+            if (self.partner_id.x_special_tax_type == 'E' and self.partner_id.x_exo_modality == 'T'
                 and not (self.partner_id.x_exo_type_exoneration and self.partner_id.x_exo_date_issue
                             and self.partner_id.x_exo_exoneration_number and self.partner_id.x_exo_institution_name) ):
                 raise UserError('El cliente es exonerado pero no han ingresado los datos de la exoneración')
             # recalcula lineas (si existen)
-            if self.line_ids and self._origin.partner_id != self.partner_id:
+            if self.line_ids and self.partner_id:
                 for line in self.line_ids:
+                    line._get_computed_taxes()
                     line._onchange_product_id()
                     line._onchange_price_subtotal()
                 self._recompute_dynamic_lines(recompute_all_taxes=True)
@@ -347,7 +416,7 @@ class FaeAccountInvoice(models.Model):
             raise UserError('Lo documentos de Exportación no pueden emitirse a clientes Exonerados')
         elif self.move_type.find('out_') == 0 and self.x_document_type == 'FEC':
             raise UserError('El tipo de documento "Factura Electrónica de Compra" no es válido en ventas')
-        elif self.x_document_type not in ('TE', 'ND', 'FEE') and self.partner_id and not self.partner_id.vat:
+        elif self.x_document_type in ('FE', 'NC') and self.partner_id and (not self.partner_id.x_identification_type_id or not self.partner_id.vat):
             raise UserError('Para el tipo de documento electrónico seleccionado, la persona debe tener registrado su número de identificación')
 
         if not self.x_reference_code_id and self.x_is_external_reference:
@@ -363,7 +432,7 @@ class FaeAccountInvoice(models.Model):
                     raise UserError('El tipo de documento recibido (%s) es diferente al indicado en este movimiento (%s)'
                                     % (self.x_fae_incoming_doc_id.document_type, self.x_document_type))
                 self.ref = self.x_fae_incoming_doc_id.issuer_sequence or self.ref
-                self.load_xml_lines()
+                # self.load_xml_lines()
 
     @api.onchange('ref', 'invoice_date')
     def _onchange_reference_info(self):
@@ -454,7 +523,7 @@ class FaeAccountInvoice(models.Model):
     def compute_name_value(self):
         if self.is_invoice(include_receipts=True) and self.name == '/' \
               and (not self.x_document_type or (self.is_purchase_document() and not self.x_fae_incoming_doc_id)):
-            name = self._compute_name_value(self.company_id.id, self.move_type)
+            name = self._compute_name_value( self.company_id.id, self.move_type)
             if name:
                 self.name = name
         elif self.is_purchase_document() and self.x_fae_incoming_doc_id:
@@ -465,12 +534,13 @@ class FaeAccountInvoice(models.Model):
     def action_post(self):
         # _logger.info('>> action_post: entro')
         for inv in self:
-            if not inv.is_invoice() or inv.x_state_dgt or (inv.x_enable_no_document_type and not inv.x_document_type):
+            if not inv.is_invoice() or inv.x_state_dgt or (inv.x_enable_no_document_type and not inv.x_document_type) \
+                    or (inv.is_purchase_document() and not inv.x_document_type and inv.partner_id.x_foreign_partner):
                 inv.compute_name_value()
                 super(FaeAccountInvoice, inv).action_post()
                 continue
             # is_invoice
-            elif not inv.x_document_type and not inv.x_enable_no_document_type:
+            elif inv.is_invoice() and not inv.x_document_type and not inv.x_enable_no_document_type:
                 raise ValidationError('El tipo de documento Electrónico es obligatorio')
             else:
                 gen_doc_electronico = False
@@ -661,7 +731,7 @@ class FaeAccountInvoice(models.Model):
                     continue
 
                 if write_log:
-                    _logger.info('>> generate_xml_and_send_dgt:  numero: %s / %s  -  consecutivo: %s', count_inv, quantity_invoices, inv.x_sequence)
+                    _logger.info('>> generate_xml_and_send_dgt: numero: %s / %s  -  consecutivo: %s', count_inv, quantity_invoices, inv.x_sequence)
 
                 # Ejecuta solo si:  no tiene comprobante  ó  es FEC (Fact. de Compra) rechazada por hacienda
                 if not inv.x_xml_comprobante or inv.x_state_dgt == 'ENV' or (inv.x_document_type == 'FEC' and inv.x_state_dgt == '2'):
@@ -855,6 +925,9 @@ class FaeAccountInvoice(models.Model):
                                         }
                                         # Se genera la exoneración si existe para este impuesto
                                         if has_exoneration:
+                                            if not inv.partner_id.property_account_position_id and not inv_line.x_exoneration_id:
+                                                raise UserError('El artículo: %s, tiene un impuesto exonerado pero no tiene asignado el número de exoneración'
+                                                                % inv_line.product_id.default_code)
                                             perc_exoneration = taxes_lookup[i['id']]['porc_exoneracion']
                                             tax_amount_exo = round(subtotal_line * (perc_exoneration / 100), 2)
                                             if tax_amount_exo > tax_amount:
@@ -862,7 +935,11 @@ class FaeAccountInvoice(models.Model):
 
                                             acum_line_tax -= tax_amount_exo  # resta la exoneracion al acumulado de impuesto
                                             tax["exoneracion"] = {"monto_exonera": tax_amount_exo,
-                                                                  "porc_exonera": perc_exoneration}
+                                                                  "porc_exonera": perc_exoneration
+                                                                  }
+                                            if inv_line.x_exoneration_id:
+                                                tax["exoneracion"].update({"exoneration_id": inv_line.x_exoneration_id.id})
+
                                         taxes[itax] = tax
 
                                 if acum_line_tax > 0.01 and (not taxes or not taxes[1].get('cod_tarifa_imp')):
@@ -1213,107 +1290,41 @@ class FaeAccountInvoice(models.Model):
             self.message_post(subject='Error', body='Archivos de XMLs y PDF del documento ' + self.x_sequence + ' no pudieron ser enviados al correo del cliente')
             # raise UserError('XML del documento no ha sido generado')
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        # OVERRIDE
+        is_incoming_doc = False
+        for vals in vals_list:
+            if 'x_fae_incoming_doc_id' in vals and vals.get('x_fae_incoming_doc_id'):
+                is_incoming_doc = True
+        if is_incoming_doc:
+            res = super(FaeAccountInvoice, self.with_context(check_move_validity=False)).create(vals_list)
+            incoming_doc = self.env['xfae.incoming.documents'].search(
+                        [('id', '=', int(vals.get('x_fae_incoming_doc_id')))], limit=1)
+            incoming_doc.write({'invoice_id': res.id, 'purchase_registried': True})
+            return res
+        return super(FaeAccountInvoice, self).create(vals_list)
 
     # carga lineas del XML para facturas de Compra
-    def load_xml_lines(self):
+    # @api.onchange('x_fae_incoming_doc_id', 'journal_id')
+    def action_load_lines_incoming_doc(self):
         return
-        # no se ejecuta hasta que este liberado
-        if ((not self.x_fae_incoming_doc_id or not self.x_document_type or self.x_document_type != 'FE')
-            or not self.company_id.x_load_bill_xml_lines):
-            return
-        if not self.x_fae_incoming_doc_id.issuer_xml_doc:
-            return
-        if self.line_ids:
-            raise ValidationError("El documento ya tiene líneas digitadas por lo que no se puede cargar las del XML")
+        # no se ejecuta hasta que este liberado    
+        for move in self:
+            if move.x_fae_incoming_doc_id and move.journal_id:
+                if (not move.is_purchase_document() or not move.x_fae_incoming_doc_id or not move.x_fae_incoming_doc_id.issuer_xml_doc
+                    or move.x_document_type not in ('NC','FE')):
+                    return
+                if move.currency_id != move.x_fae_incoming_doc_id.currency_id:
+                    raise UserError("La moneda del documento recibido es: %s" % move.x_fae_incoming_doc_id.currency_id.name)
+                if move.x_fae_incoming_doc_id.lines_count == 0:
+                    if not move.x_fae_incoming_doc_id.carga_lineas_xml():
+                        raise ValidationError("Al documento recibido no se le pudo extraer la líneas de detalle del XML")
 
-        try:
-            # doc = minidom.parseString(base64.decodebytes(self.x_fae_incoming_doc_id.issuer_xml_doc))
-            doc = etree.fromstring(base64.decodebytes(self.x_fae_incoming_doc_id.issuer_xml_doc))
-            ns['nsx'] = doc.nsmap.pop(None)
-        except Exception as e:
-            raise UserError("Fallo al parsear el XML recibido. Error: %s" % e)
+                move.invoice_line_ids = [[6, 0, []]]
+                move_lines = move.x_fae_incoming_doc_id.get_purchase_move_lines(self)
 
-        account_id = self.company_id.x_def_expenses_account
-
-        # _logger.info('>> action_invoice_sent: xml %s ', str(doc))
-
-        tag_codigoMoneda = doc.xpath("nsx:ResumenFactura/nsx:CodigoTipoMoneda/nsx:CodigoMoneda", namespaces=ns)
-
-        currency = 'CRC'
-        if tag_codigoMoneda:
-            currency = tag_codigoMoneda[0].text
-            if not currency:
-                currency = 'CRC'
-
-        currency_id = self.env['res.currency'].search([('name', '=', currency)], limit=1).id
-        if not currency_id:
-            raise UserError("No pudo localizar el ID para la moneda: %s" % currency)
-
-        self.currency_id.id = currency_id
-
-        move_lines = self.env['account.move.line']
-        num_line = 0
-        for line in doc.xpath("nsx:DetalleServicio/nsx:LineaDetalle", namespaces=ns):
-            num_line += 1
-            uom_id = self.env['uom.uom'].search([('x_code_dgt', '=', line.xpath("nsx:UnidadMedida", namespaces=ns)[0].text)], limit=1).id
-
-            quantity = (float(line.xpath("nsx:Cantidad", namespaces=ns)[0].text) or 1)
-            price_subtotal = float(line.xpath("nsx:SubTotal", namespaces=ns)[0].text)  # antes de impuesto
-            price_unit = price_subtotal / quantity
-            price_total = float(line.xpath("nsx:MontoTotalLinea", namespaces=ns)[0].text)
-
-            total_tax_Net = 0.0
-            tag_tax_net = line.xpath("nsx:ImpuestoNeto", namespaces=ns)
-            if tag_tax_net:
-                total_tax_Net = float(tag_tax_net[0].text)
-            taxes = []
-            for tax in line.xpath("nsx:Impuesto", namespaces=ns):
-                tax_code = self.env['xtax.code'].search([('code', '=', tax.xpath("nsx:Codigo", namespaces=ns)[0].text),
-                                                         ('active', '=', True), ], limit=1)
-                tax_rate_code = tax.xpath("nsx:CodigoTarifa", namespaces=ns)[0].text
-                tax_rate = float(tax_line.xpath("nsx:Tarifa", namespaces=ns)[0].text)
-                tag_exo = tax.xpath("nsx:Exoneracion", namespaces=ns)
-                if tag_exo:
-                    exo_porc = float(tag_exo.xpath("nsx:PorcentajeExoneracion", namespaces=ns)[0].text)
-                    tax_rate = tax_amount - (exo_porc or 0)
-                    tax_id = self.env['account.tax'].search([('type_tax_use', '=', 'purchase'), ('active', '=', True),
-                                                             ('tax_code_id', '=', tax_code.id),
-                                                             ('amount', '=', tax_rate),
-                                                             ('x_has_exoneration', '=', True),
-                                                             ('x_exoneration_rate', '=', exo_porc)
-                                                             ], limit=1).id
-                    if not tax_id:
-                        raise UserError('No existe un impuesto de código: %s con exoneración del %s and tarifa por aplicar de %s'
-                                        % (tax_code.name, exo_porc, tax_rate))
-                else:
-                    tax_id = self.env['account.tax'].search([('type_tax_use', '=', 'purchase'), ('active', '=', True),
-                                                             ('tax_code_id', '=', tax_code.id),
-                                                             ('amount', '=', tax_rate),
-                                                             ('x_has_exoneration', '=', False),
-                                                             ], limit=1).id
-                    if not tax_id:
-                        raise UserError('No existe un impuesto de código: %s tarifa por aplicar de %s' % (tax_code.name, tax_rate))
-
-                taxes.append((4, tax_id))
-
-            _logger.debug('>> load_xml_lines: creando linea de factura')
-            new_move_line = self.env['account.move.line'].create({
-                'move_id': self.id,
-                'name': line.xpath("nsx:Detalle", namespaces=ns)[0].text,
-                'price_unit': price_unit,
-                'quantity': quantity,
-                'uom_id': uom_id,
-                'sequence': line.xpath("nsx:NumeroLinea", namespaces=ns)[0].text,
-                'account_id': account_id or False,
-                'price_subtotal': price_subtotal,
-                'price_total': price_total,
-            })
-
-            # This must be assigned after line is created
-            new_move_line.invoice_line_tax_ids = taxes
-            move_lines += new_move_line
-
-            self.line_ids = move_lines
-        _logger.info('>> load_xml_lines: xml %s ', str(doc))
-        self.x_amount_total = float(doc.xpath("nsx:ResumenFactura/nsx:TotalComprobante", namespaces=ns)[0].text)
-        self._recompute_dynamic_lines(recompute_all_taxes=True)
+                move.invoice_line_ids = move_lines
+                move._onchange_invoice_line_ids()
+                move.line_ids._onchange_price_subtotal()
+                move._onchange_recompute_dynamic_lines()

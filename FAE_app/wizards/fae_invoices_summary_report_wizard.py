@@ -11,6 +11,7 @@ _logger = logging.getLogger(__name__)
 
 class invoices_report_wizard(models.TransientModel):
     _name = 'xfae.invoices.report.wizard'
+    _description = 'FAE invoice report wizard'
 
     date_from = fields.Date(string='Start date', required=True)
     date_to = fields.Date(string='End date', required=True)
@@ -192,6 +193,9 @@ class invoices_report_wizard(models.TransientModel):
             if self.write_log_info and move.currency_id.name == 'USD':
                 _logger.info('>> Moneda: %s  tc: %s', move.currency_id.name, move.x_currency_rate)
 
+            amount_total = move.amount_total * signo
+            amount_total_col = amount_total if move.currency_id.name == 'CRC' else float_round(amount_total * move.x_currency_rate, precision_digits=5)
+
             docs.append({
                 'origen': 'F',
                 'currency': move.currency_id.name,
@@ -210,7 +214,8 @@ class invoices_report_wizard(models.TransientModel):
                 'currency_symbol': move.currency_id.symbol,
                 'currency_rate': move.x_currency_rate,
                 'amount_tax': move.amount_tax * signo,
-                'amount_total': move.amount_total * signo,
+                'amount_total': amount_total,
+                'amount_total_col': amount_total_col,
             })
 
         # _logger.info('>> fae_invoice_summary_report.account_move: filtrar docs tax - electronicos.  %s ', datetime.date.today())
@@ -248,7 +253,10 @@ class invoices_report_wizard(models.TransientModel):
                     economic_activity_list.append(move.company_id.x_economic_activity_id.id)
                     tax_economic_activity.append({'id': move.company_id.x_economic_activity_id.id, 'code': move.company_id.x_economic_activity_id.code
                                                      , 'name': move.company_id.x_economic_activity_id.name})
-                #
+
+                amount_total = move.amount_total * signo
+                amount_total_col = amount_total if move.currency_id.name == 'CRC' else float_round(amount_total * move.x_currency_rate, precision_digits=5)
+
                 docs.append({
                     'origen': 'P',
                     'currency': move.currency_id.name,
@@ -269,7 +277,8 @@ class invoices_report_wizard(models.TransientModel):
                     'currency_symbol': move.currency_id.symbol,
                     'currency_rate': move.x_currency_rate,
                     'amount_tax': move.amount_tax,
-                    'amount_total': move.amount_total,
+                    'amount_total': amount_total,
+                    'amount_total_col': amount_total_col,
                 })
             pos_orders_tax = pos_orders.filtered(lambda r: r.state != 'cancel'
                                                            and r.x_state_dgt == '1'
@@ -298,10 +307,13 @@ class invoices_report_wizard(models.TransientModel):
                     'lines_services_not_doc': lines_services_not_doc,
                     'lines_gppds_canceled': lines_goods_canceled,
                     'lines_services_canceled': lines_services_canceled,
-                    })
-        #
-        list_docs = sorted(docs, lambda r: (r.get('currency'), r.get('td') or '_', r.get('sequence') or str(r.get('id'))))
+                })
+        # la sigte instruccion para odoo.sh
+        # list_docs = sorted(docs, key=lambda r: (r.get('currency'), r.get('td') or '_', r.get('sequence') or str(r.get('id'))))
 
+        # Instruccion para la maquina virtual
+        docs.sort(key=lambda r: (r.get('currency'), r.get('td') or '_', r.get('sequence') or str(r.get('id'))))
+        list_docs = docs
         datas = {
             'ids': [],
             'model': 'pos.order',
@@ -312,6 +324,7 @@ class invoices_report_wizard(models.TransientModel):
             'to_month': to_month,
             'to_year': to_year,
             'tax_lines_summary': tax_lines_summary_ae,
+            'symbol_col': self.env.ref('base.CRC').symbol,
             'list_docs': list_docs,
         }
 

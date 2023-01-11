@@ -127,9 +127,19 @@
                         attrs="{'invisible':[('move_type', 'not in', ('out_invoice', 'out_refund', 'in_invoice', 'in_refund'))], 'readonly':[('x_move_editable','=',False)]}"/>
             </xpath>
 
+<!--            <xpath expr="//div[@name='journal_div']" position="after">-->
+<!--                <button name="action_load_lines_incoming_doc" type="object"-->
+<!--                        string="Cargar Doc.Electrónico" style="background-color:#eaeded"-->
+<!--                        attrs="{'invisible':['|',('x_fae_incoming_doc_id','=',False),('invoice_line_ids','=',True)]}"-->
+<!--                />-->
+<!--            </xpath>-->
 
             <xpath expr="//field[@name='invoice_line_ids']" position="attributes">
                 <attribute name="attrs">{'readonly': [('x_move_editable','=',False)]}</attribute>
+                <!-- La siguiente linea debe eliminarse en odoo 15, ya que check_move_validity es no soportado y los otros son el default de odoo -->
+                <attribute name="context">
+                    {'check_move_validity': False, 'default_move_type': context.get('default_move_type'), 'journal_id': journal_id, 'default_partner_id': commercial_partner_id, 'default_currency_id': currency_id or company_currency_id}
+                </attribute>
             </xpath>
 
             <xpath expr="//field[@name='invoice_line_ids']//tree//field[@name='name']" position="after">
@@ -139,6 +149,11 @@
 
             <xpath expr="//field[@name='invoice_line_ids']//tree//field[@name='discount']" position="after">
                 <field name="x_discount_note" groups="product.group_discount_per_so_line"/>
+            </xpath>
+
+            <xpath expr="//field[@name='invoice_line_ids']//tree//field[@name='price_subtotal']" position="after">
+                <field name="price_total" readonly="1" optional="show" />
+                <field name="x_exoneration_id" readonly="1" force_save="1" optional="hide"/>
             </xpath>
 
             <!-- Configura el tab de detalle contable -->
