@@ -169,7 +169,7 @@ def val_identification_vat(identification_type_code, vat):
                 if vat.isdigit() and len(vat) < 11 or len(vat) > 12:
                     error_msg = 'El DIMEX debe tener 11 o 12 dígitos y sin guiones'
             elif identification_type_code == '04':  # NITE
-                if vat.isdigit() and len(vat) != 9:
+                if vat.isdigit() and len(vat) != 10:
                     error_msg = 'El NITE  debe tener 10 dígitos y sin guiones'
     return error_msg
 
@@ -925,10 +925,8 @@ def parser_xml(identification_type_obj, company_obj, currency_obj, origin, docxm
                 identification_type = getElementTag_data(tag_identif_receptor.getElementsByTagName('Tipo'))
                 identification_number = getElementTag_data(tag_identif_receptor.getElementsByTagName('Numero'))
 
-                company_id = None
                 company = company_obj.filtered(lambda c: c.vat == identification_number)
-                for cia in company:
-                    company_id = cia.id
+                company_id = company[0].id if len(company) > 0 else None
 
                 rec = identification_type_obj.filtered(lambda t: t.code == identification_type)
                 identification_type_id = (rec and rec.id or None)
@@ -945,7 +943,6 @@ def parser_xml(identification_type_obj, company_obj, currency_obj, origin, docxm
 
         f_emision = doc.getElementsByTagName('FechaEmision')[0].childNodes[0].data
         version_normativa = '43'
-
 
         issuer_identification_type = tag_issuer.getElementsByTagName('Tipo')[0].childNodes[0].data
 
@@ -989,15 +986,10 @@ def parser_xml(identification_type_obj, company_obj, currency_obj, origin, docxm
         # El archivo es un Mensaje de Hacienda
         # _logger.info('>> fae_utiles.parser_xml: clave_hacienda %s   es_mensaje_hacienda', clave_hacienda)
         identification_number = getElementTag_data(doc.getElementsByTagName('NumeroCedulaReceptor'))
-        company_id = None
-        company = company_obj.filtered(lambda c: c.vat == identification_number)
-        for cia in company:
-            company_id = cia.id
 
         issuer_identification_type = getElementTag_data(doc.getElementsByTagName('TipoIdentificacionEmisor'))
 
         values = {
-            'company_id': company_id,
             'identification_number': identification_number,
             'issuer_identification_type': issuer_identification_type,
             'issuer_identification_num': doc.getElementsByTagName('NumeroCedulaEmisor')[0].childNodes[0].data,
@@ -1008,6 +1000,9 @@ def parser_xml(identification_type_obj, company_obj, currency_obj, origin, docxm
             'amount_total': doc.getElementsByTagName('TotalFactura')[0].childNodes[0].data,
             'origin': origin,
             }
+        company = company_obj.filtered(lambda c: c.vat == identification_number)
+        if len(company) > 0:
+            values.update({'company_id': company[0].id})
 
     if issuer_identification_type:
         rec = identification_type_obj.filtered(lambda t: t.code == issuer_identification_type)
