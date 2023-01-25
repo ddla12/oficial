@@ -38,8 +38,7 @@ class XAccountPaymentReconciled(models.Model):
                     row_number() OVER () AS id,
                     invoice.currency_id AS currency_id,
                     payment.id AS payment_id,
-                    CASE WHEN (payment.amount)::double precision > (invoice.amount_total)::double precision 
-                        THEN invoice.amount_total ELSE  payment.amount END AS payment_amount,
+                    part.debit_amount_currency AS payment_amount,
                     invoice.id AS invoice_id,
                     invoice.company_id AS company_id,
                     invoice.invoice_user_id,
@@ -64,5 +63,5 @@ class XAccountPaymentReconciled(models.Model):
                 WHERE account.internal_type IN ('receivable', 'payable')
                     AND line.id != counterpart_line.id
                     AND invoice.move_type in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt')
-                GROUP BY payment.id, invoice.id, paid_in
+                GROUP BY payment.id, invoice.id, paid_in, part.debit_amount_currency
         )''' % (self._table,))
