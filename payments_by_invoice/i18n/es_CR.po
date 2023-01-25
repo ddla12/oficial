@@ -1,0 +1,172 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* payments_by_invoice
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 14.0+e-20201208\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-01-18 13:48+0000\n"
+"PO-Revision-Date: 2023-01-18 13:48+0000\n"
+"Last-Translator: Prointec\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__company_id
+msgid "Company"
+msgstr "Compañía"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__currency_id
+msgid "Currency"
+msgstr "Moneda"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields.selection,name:payments_by_invoice.selection__xaccount_payment_reconciled__invoice_move_type__out_refund
+msgid "Customer Credit Note"
+msgstr "Nota de crédito del cliente"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields.selection,name:payments_by_invoice.selection__xaccount_payment_reconciled__invoice_move_type__out_invoice
+msgid "Customer Invoice"
+msgstr "Factura del cliente"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__display_name
+msgid "Display Name"
+msgstr "Nombre para mostrar"
+
+#. module: payments_by_invoice
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Group By"
+msgstr "Agrupar por"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__id
+msgid "ID"
+msgstr ""
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__invoice_id
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Invoice"
+msgstr "Factura"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__invoice_amount_residual
+msgid "Invoice Amount Residual"
+msgstr "Monto adeudado de factura"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__invoice_date
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Invoice Date"
+msgstr "Fecha de factura"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__invoice_amount_total
+msgid "Invoice Total"
+msgstr "Total de factura"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__invoice_move_type
+msgid "Invoice Type"
+msgstr "Tipo de factura"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled____last_update
+msgid "Last Modified on"
+msgstr "Modificado por última vez el"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__paid_in
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Paid in"
+msgstr "Pagado en"
+
+#. module: payments_by_invoice
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Paid in +45 Days"
+msgstr "Pagado en +45 Días"
+
+#. module: payments_by_invoice
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Paid in 0 - 15 Days"
+msgstr "Pagado en 0 - 15 Días"
+
+#. module: payments_by_invoice
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Paid in 16 - 30 Days"
+msgstr "Pagado en 16 - 30 Días"
+
+#. module: payments_by_invoice
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Paid in 31 - 45 Days"
+msgstr "Pagado en 31 - 45 Días"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__payment_id
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Payment"
+msgstr "Pago"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__payment_date
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Payment Date"
+msgstr "Fecha del pago"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__invoice_payment_term_id
+msgid "Payment Term"
+msgstr "Término de pago"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__payment_amount
+msgid "Payment total"
+msgstr "Total del pago"
+
+#. module: payments_by_invoice
+#: model:ir.model,name:payments_by_invoice.model_xaccount_payment_reconciled
+msgid "Payment view for reconciled invoices"
+msgstr "Vista de pago para facturas conciliadas"
+
+#. module: payments_by_invoice
+#: model:ir.actions.act_window,name:payments_by_invoice.xaccount_payment_reconciled_customer_action_window
+#: model:ir.actions.act_window,name:payments_by_invoice.xaccount_payment_reconciled_vendor_action_window
+#: model:ir.ui.menu,name:payments_by_invoice.xaccount_payment_reconciled_customer_menu
+#: model:ir.ui.menu,name:payments_by_invoice.xaccount_payment_reconciled_vendor_menu
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_form_view
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Payments by Invoice"
+msgstr "Pagos por factura"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields.selection,name:payments_by_invoice.selection__xaccount_payment_reconciled__invoice_move_type__in_receipt
+msgid "Purchase Receipt"
+msgstr "Recibo de compra"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields.selection,name:payments_by_invoice.selection__xaccount_payment_reconciled__invoice_move_type__out_receipt
+msgid "Sales Receipt"
+msgstr "Recibo de ventas"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__invoice_user_id
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Salesperson"
+msgstr "Comercial"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields.selection,name:payments_by_invoice.selection__xaccount_payment_reconciled__invoice_move_type__in_invoice
+msgid "Vendor Bill"
+msgstr "Factura del proveedor"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields.selection,name:payments_by_invoice.selection__xaccount_payment_reconciled__invoice_move_type__in_refund
+msgid "Vendor Credit Note"
+msgstr "Nota de crédito del proveedor"
