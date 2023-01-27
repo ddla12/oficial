@@ -14,9 +14,10 @@
                 <field name="paid_in"/>
                 <field name="invoice_payment_term_id"/>
                 <field name="company_id"/>
-                <field name="payment_amount"/>
-                <field name="invoice_amount_total"/>
-                <field name="invoice_amount_residual"/>
+                <field name="payment_amount" sum="Payment total"/>
+                <field name="invoice_amount_total" sum="Invoice Total"/>
+                <field name="invoice_amount_residual" sum="Invoice Amount Residual"/>
+                <field name="pay_range" invisible="1"/>
             </tree>
         </field>
     </record>
@@ -43,7 +44,9 @@
                     <filter name="invoice_user_id" string="Salesperson" context="{'group_by': 'invoice_user_id'}"/>
                     <filter name="payment_id" string="Payment" context="{'group_by': 'payment_id'}"/>
                     <filter name="invoice_id" string="Invoice" context="{'group_by': 'invoice_id'}"/>
-                    <filter name="paid_in" string="Paid in" context="{'group_by': 'paid_in'}"/>
+                    <filter name="payment_date" string="Payment Date" context="{'group_by': 'payment_date'}"/>
+                    <filter name="invoice_date" string="Invoice Date" context="{'group_by': 'invoice_date'}"/>
+                    <filter name="pay_range" string="Pay Range" context="{'group_by': 'pay_range'}"/>
                 </group>
             </search>
         </field>
@@ -59,6 +62,7 @@
                     <group>
                         <field name="currency_id" invisible="1"/>
                         <field name="invoice_move_type" invisible="1"/>
+                        <field name="pay_range" invisible="1"/>
                         <group>
                             <field name="invoice_user_id"/>
                             <field name="payment_id"/>

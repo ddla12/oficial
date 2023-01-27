@@ -16,6 +16,21 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: payments_by_invoice
+#: model:ir.model.fields.selection,name:payments_by_invoice.selection__xaccount_payment_reconciled__pay_range__pay_range_0_15
+msgid "0 to 15 days"
+msgstr "0 a 15 días"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields.selection,name:payments_by_invoice.selection__xaccount_payment_reconciled__pay_range__pay_range_16_30
+msgid "16 to 30 days"
+msgstr "16 a 30 días"
+
+#. module: payments_by_invoice
+#: model:ir.model.fields.selection,name:payments_by_invoice.selection__xaccount_payment_reconciled__pay_range__pay_range_31_45
+msgid "31 to 45 days"
+msgstr "31 a 45 días"
+
+#. module: payments_by_invoice
 #: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__company_id
 msgid "Company"
 msgstr "Compañía"
@@ -58,6 +73,7 @@ msgstr "Factura"
 
 #. module: payments_by_invoice
 #: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__invoice_amount_residual
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_tree_view
 msgid "Invoice Amount Residual"
 msgstr "Monto adeudado de factura"
 
@@ -69,6 +85,7 @@ msgstr "Fecha de factura"
 
 #. module: payments_by_invoice
 #: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__invoice_amount_total
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_tree_view
 msgid "Invoice Total"
 msgstr "Total de factura"
 
@@ -83,8 +100,12 @@ msgid "Last Modified on"
 msgstr "Modificado por última vez el"
 
 #. module: payments_by_invoice
+#: model:ir.model.fields.selection,name:payments_by_invoice.selection__xaccount_payment_reconciled__pay_range__pay_range_plus_45
+msgid "More than 45 days"
+msgstr "Más de 45 días"
+
+#. module: payments_by_invoice
 #: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__paid_in
-#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
 msgid "Paid in"
 msgstr "Pagado en"
 
@@ -109,6 +130,12 @@ msgid "Paid in 31 - 45 Days"
 msgstr "Pagado en 31 - 45 Días"
 
 #. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__pay_range
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Pay Range"
+msgstr "Rango de pago"
+
+#. module: payments_by_invoice
 #: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__payment_id
 #: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
 msgid "Payment"
@@ -127,6 +154,7 @@ msgstr "Término de pago"
 
 #. module: payments_by_invoice
 #: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__payment_amount
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_tree_view
 msgid "Payment total"
 msgstr "Total del pago"
 
