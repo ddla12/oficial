@@ -11,6 +11,7 @@
                 <field name="invoice_id"/>
                 <field name="payment_date"/>
                 <field name="invoice_date"/>
+                <field name="invoice_date_due"/>
                 <field name="paid_in"/>
                 <field name="invoice_payment_term_id"/>
                 <field name="company_id"/>
@@ -39,6 +40,7 @@
                 <filter name="paid_in" string="Paid in 31 - 45 Days" domain="['&amp;', ('paid_in', '&gt;=', 31), ('paid_in', '&lt;=', 45)]"/>
                 <filter name="paid_in" string="Paid in +45 Days" domain="[('paid_in', '&gt;', 45)]"/>
                 <filter name="invoice_date" string="Invoice Date" date="invoice_date"/>
+                <filter name="invoice_date_due" string="Invoice Due Date" date="invoice_date_due"/>
                 <filter name="payment_date" string="Payment Date" date="payment_date"/>
                 <group expand="0" name="group_by" string="Group By">
                     <filter name="invoice_user_id" string="Salesperson" context="{'group_by': 'invoice_user_id'}"/>
@@ -46,9 +48,33 @@
                     <filter name="invoice_id" string="Invoice" context="{'group_by': 'invoice_id'}"/>
                     <filter name="payment_date" string="Payment Date" context="{'group_by': 'payment_date'}"/>
                     <filter name="invoice_date" string="Invoice Date" context="{'group_by': 'invoice_date'}"/>
+                    <filter name="invoice_date_due" string="Invoice Due Date" context="{'group_by': 'invoice_date_due'}"/>
                     <filter name="pay_range" string="Pay Range" context="{'group_by': 'pay_range'}"/>
                 </group>
             </search>
+        </field>
+    </record>
+
+    <!-- PIVOT VIEW -->
+    <record id="xaccount_payment_reconciled_pivot_view" model="ir.ui.view">
+        <field name="name">xaccount_payment_reconciled_pivot_view</field>
+        <field name="model">xaccount.payment.reconciled</field>
+        <field name="arch" type="xml">
+            <pivot string="Payments by Invoice">
+                <field name="invoice_user_id"/>
+                <field name="payment_id"/>
+                <field name="invoice_id"/>
+                <field name="payment_date"/>
+                <field name="invoice_date"/>
+                <field name="invoice_date_due"/>
+                <field name="paid_in"/>
+                <field name="invoice_payment_term_id"/>
+                <field name="company_id"/>
+                <field name="payment_amount" sum="Payment total"/>
+                <field name="invoice_amount_total" sum="Invoice Total"/>
+                <field name="invoice_amount_residual" sum="Invoice Amount Residual"/>
+                <field name="pay_range"/>
+            </pivot>
         </field>
     </record>
 
@@ -75,6 +101,7 @@
                             <field name="company_id"/>
                             <field name="payment_date"/>
                             <field name="invoice_date"/>
+                            <field name="invoice_date_due"/>
                             <field name="paid_in"/>
                             <field name="invoice_amount_residual"/>
                         </group>
@@ -88,7 +115,7 @@
     <record id="xaccount_payment_reconciled_customer_action_window" model="ir.actions.act_window">
         <field name="name">Payments by Invoice</field>
         <field name="res_model">xaccount.payment.reconciled</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">tree,pivot,form</field>
         <field name="domain">[('invoice_move_type', '=', 'out_invoice')]</field>
         <field name="search_view_id" ref="xaccount_payment_reconciled_search_view"/>
     </record>
@@ -96,7 +123,7 @@
     <record id="xaccount_payment_reconciled_vendor_action_window" model="ir.actions.act_window">
         <field name="name">Payments by Invoice</field>
         <field name="res_model">xaccount.payment.reconciled</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">tree,pivot,form</field>
         <field name="domain">[('invoice_move_type', '=', 'in_invoice')]</field>
         <field name="search_view_id" ref="xaccount_payment_reconciled_search_view"/>
     </record>

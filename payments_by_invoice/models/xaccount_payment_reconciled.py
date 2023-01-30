@@ -30,6 +30,7 @@ class XAccountPaymentReconciled(models.Model):
     company_id = fields.Many2one(comodel_name="res.company", string="Company")
     invoice_user_id = fields.Many2one(comodel_name="res.users", string="Salesperson")
     invoice_date = fields.Date(string="Invoice Date")
+    invoice_date_due = fields.Date(string="Invoice Due Date")
     invoice_amount_total = fields.Monetary(string="Invoice Total", currency_field="currency_id")
     invoice_amount_residual = fields.Monetary(string="Invoice Amount Residual", currency_field="currency_id")
     invoice_move_type = fields.Selection(selection=INVOICE_MOVE_TYPES, string="Invoice Type")
@@ -51,6 +52,7 @@ class XAccountPaymentReconciled(models.Model):
                     invoice.company_id AS company_id,
                     invoice.invoice_user_id,
                     invoice.invoice_date,
+                    invoice.invoice_date_due AS invoice_date_due,
                     CASE 
                         WHEN (amove.date - invoice.invoice_date) > 0 THEN amove.date - invoice.invoice_date ELSE 0 END AS paid_in,
                     invoice.amount_total AS invoice_amount_total,
