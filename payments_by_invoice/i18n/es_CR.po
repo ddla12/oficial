@@ -84,6 +84,12 @@ msgid "Invoice Date"
 msgstr "Fecha de factura"
 
 #. module: payments_by_invoice
+#: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__invoice_date_due
+#: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_search_view
+msgid "Invoice Due Date"
+msgstr "Fecha de vencimiento de factura"
+
+#. module: payments_by_invoice
 #: model:ir.model.fields,field_description:payments_by_invoice.field_xaccount_payment_reconciled__invoice_amount_total
 #: model_terms:ir.ui.view,arch_db:payments_by_invoice.xaccount_payment_reconciled_tree_view
 msgid "Invoice Total"
