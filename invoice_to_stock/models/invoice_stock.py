@@ -101,11 +101,11 @@ class xAccountMove(models.Model):
         if len(self.invoice_line_ids.filtered(lambda r: r.product_id.type in ('consu', 'product'))) == 0:
             return
         if self.move_type == 'out_refund':
-            location_id = self.partner_id.property_stock_customer.id
-            location_dest_id = self.x_picking_type_id.default_location_dest_id.id
+            location_id = self.x_picking_type_id.default_location_src_id.id
+            location_dest_id = self.partner_id.property_stock_customer.id
         elif self.move_type == 'in_refund':
-            location_id = self.partner_id.property_stock_supplier.id
-            location_dest_id = self.x_picking_type_id.default_location_dest_id.id
+            location_id = self.x_picking_type_id.default_location_src_id.id
+            location_dest_id = self.partner_id.property_stock_supplier.id
         else:
             raise ValidationError("Se espera que el código de tipo de operación sea de 'Entrega' o 'Recibo'")
         if not location_dest_id:
