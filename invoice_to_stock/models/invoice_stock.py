@@ -1,11 +1,33 @@
 # -*- coding: utf-8 -*-
 
-from odoo import fields, models, api, _ 
+from odoo import fields, models, api, _
 from odoo.exceptions import UserError, ValidationError
 
 import logging
 
 _logger = logging.getLogger(__name__)
+
+
+class StockPickingType(models.Model):
+    _inherit = "stock.picking.type"
+
+    @api.depends
+    def _onchange_default_location_src_id(self):
+        picking_ids = self.env['stock.picking'].search([('picking_type_id', '=', self.id)])
+        if picking_ids:
+            alert = {'title': _('Action denied'),
+                     'message': _(
+                         'It is not possible to modify the origin location if there are already movements linked to it. Please contact an Administrator')}
+            return {'value': {'default_location_src_id': self._origin.default_location_src_id.id}, 'warning': alert}
+
+    @api.depends
+    def _onchange_default_location_src_id(self):
+        picking_ids = self.env['stock.picking'].search([('picking_type_id', '=', self.id)])
+        if picking_ids:
+            alert = {'title': _('Action denied'),
+                     'message': _(
+                         'It is not possible to modify the destination location if there are already movements linked to it. Please contact an Administrator')}
+            return {'value': {'default_location_dest_id': self._origin.default_location_dest_id.id}, 'warning': alert}
 
 
 class AccountMoveReversal(models.TransientModel):
@@ -70,8 +92,8 @@ class xAccountMove(models.Model):
     x_invoice_picking_id = fields.Many2one('stock.picking', string="Picking", copy=False)
 
     x_picking_type_id = fields.Many2one('stock.picking.type', 'Mov.Inventario',
-                                      default=_get_stock_type_id,
-                                      help="Indica el tipo de movimiento de inventario")
+                                        default=_get_stock_type_id,
+                                        help="Indica el tipo de movimiento de inventario")
     x_sale_order_id = fields.Many2one("sale.order", string="Cotización", copy=False,
                                       help='Cotización que originó la factura')
 
@@ -86,7 +108,7 @@ class xAccountMove(models.Model):
                 # El picking de facturación solo se hace para Notas de Credito
                 if move.move_type in ('out_refund', 'in_refund'):
                     move.create_stock_picking()
-                elif  move.move_type in ('out_invoice','in_invoice'):
+                elif move.move_type in ('out_invoice', 'in_invoice'):
                     move.x_picking_type_id = None
         return res
 
@@ -101,8 +123,8 @@ class xAccountMove(models.Model):
         if len(self.invoice_line_ids.filtered(lambda r: r.product_id.type in ('consu', 'product'))) == 0:
             return
         if self.move_type == 'out_refund':
-            location_id = self.x_picking_type_id.default_location_src_id.id
-            location_dest_id = self.partner_id.property_stock_customer.id
+            location_id = self.partner_id.property_stock_customer.id
+            location_dest_id = self.x_picking_type_id.default_location_dest_id.id
         elif self.move_type == 'in_refund':
             location_id = self.x_picking_type_id.default_location_src_id.id
             location_dest_id = self.partner_id.property_stock_supplier.id
@@ -111,14 +133,14 @@ class xAccountMove(models.Model):
         if not location_dest_id:
             raise ValidationError("El tipo de operación: %s, no tiene configurado la localización destino")
         data = {
-                'x_account_move_id': self.id,
-                'location_id': location_id,
-                'location_dest_id': location_dest_id,
-                'picking_type_id': self.x_picking_type_id.id,
-                'partner_id': self.partner_id.id,
-                'origin': self.name,
-                'move_type': 'direct'
-                }
+            'x_account_move_id': self.id,
+            'location_id': location_id,
+            'location_dest_id': location_dest_id,
+            'picking_type_id': self.x_picking_type_id.id,
+            'partner_id': self.partner_id.id,
+            'origin': self.name,
+            'move_type': 'direct'
+        }
 
         picking = self.env['stock.picking'].create(data)
         self.x_invoice_picking_id = picking.id
@@ -165,7 +187,7 @@ class xAccountMoveLine(models.Model):
                 'route_ids': 1 and [
                     (6, 0, [x.id for x in self.env['stock.location.route'].search([('id', 'in', (2, 3))])])] or [],
                 'warehouse_id': picking.picking_type_id.warehouse_id.id,
-                }
+            }
             diff_quantity = line.quantity
             tmp = data.copy()
             tmp.update({
