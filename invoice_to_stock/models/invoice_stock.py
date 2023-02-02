@@ -8,28 +8,6 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-class StockPickingType(models.Model):
-    _inherit = "stock.picking.type"
-
-    @api.depends
-    def _onchange_default_location_src_id(self):
-        picking_ids = self.env['stock.picking'].search([('picking_type_id', '=', self.id)])
-        if picking_ids:
-            alert = {'title': _('Action denied'),
-                     'message': _(
-                         'It is not possible to modify the origin location if there are already movements linked to it. Please contact an Administrator')}
-            return {'value': {'default_location_src_id': self._origin.default_location_src_id.id}, 'warning': alert}
-
-    @api.depends
-    def _onchange_default_location_src_id(self):
-        picking_ids = self.env['stock.picking'].search([('picking_type_id', '=', self.id)])
-        if picking_ids:
-            alert = {'title': _('Action denied'),
-                     'message': _(
-                         'It is not possible to modify the destination location if there are already movements linked to it. Please contact an Administrator')}
-            return {'value': {'default_location_dest_id': self._origin.default_location_dest_id.id}, 'warning': alert}
-
-
 class AccountMoveReversal(models.TransientModel):
     _inherit = "account.move.reversal"
 

@@ -11,6 +11,7 @@
     'depends': ['base', 'account', 'sale', 'stock', 'sale_stock'],
     'data': [
         'views/invoice_stock_view.xml',
+        'views/stock_picking_type_view.xml',
         'wizards/account_move_reverse_view.xml',
     ],
     "application": False,
