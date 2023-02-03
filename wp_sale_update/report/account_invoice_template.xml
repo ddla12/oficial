@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <template id="report_pos_order_invoice_inherit" inherit_id="FAE_app.account.report_invoice_document">
+    <template id="report_pos_order_invoice_inherit" inherit_id="account.report_invoice_document">
         <xpath expr="//div/div[2]/div[@id='informations']/table/tbody/tr[@id='t1_tr1']/td[@id='h1_partner_name_data']" position="replace">
             <td id="h1_partner_name_data">
                 <t t-if="o.partner_id.name != 'CLIENTE CONTADO'">
