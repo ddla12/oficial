@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="report_pos_order_invoice_inherit" inherit_id="account.report_invoice_document">
-        <xpath expr="//div/div[2]/div[@id='informations']/table/tbody/tr[@id='t1_tr1']/td[@id='h1_partner_name_data']" position="replace">
-            <td id="h1_partner_name_data">
+        <xpath expr="//xpath/div/div[2]/div[@id='informations']/table/tbody/tr[@id='t1_tr1']/td[@id='h1_partner_name_data']" position="replace">
                 <t t-if="o.partner_id.name != 'CLIENTE CONTADO'">
                     <t t-if="o.partner_id.parent_id and o.partner_id.parent_id.name != o.partner_id.name ">
                         <span style="font-size:18px; font-weight:bold;" t-field="o.partner_id.parent_id.name"/>
@@ -15,7 +14,6 @@
                         <span style="font-size:18px; font-weight:bold" t-field="o.x_name_to_print"/>
                     </t>
                 </t>
-            </td>
         </xpath>
     </template>
 </odoo>
