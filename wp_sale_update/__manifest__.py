@@ -21,6 +21,7 @@
         'views/stock_picking_views.xml',
         'views/message_alert_views.xml',
         'report/pos_order_invoice_template.xml',
-        'report/sale_report_template.xml'
+        'report/sale_report_template.xml',
+        'report/account_invoice_template.xml'
     ],
 }
