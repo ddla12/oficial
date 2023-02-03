@@ -6,7 +6,7 @@
         Modificaciones personalizadas para WaterPump
         + evita que la fecha pueda ser modificada        
         + Muestra los picking en el módulo de facturación
-""",
+    """,
     'category': 'Extra',
     'version': '14',
     'author': "PROINTEC",
