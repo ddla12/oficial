@@ -17,9 +17,3 @@ class posorderwp(models.Model):
         if self.x_document_type == 'FE' and not self.partner_id.email:
             raise ValidationError('El cliente seleccionado no tiene asignado correo para el envío de la Factura Electrónica')
         return super(posorderwp, self).action_get_payment()
-
-    @api.onchange('session_id')
-    def change_session(self):
-        for data in self:
-            msg = ('Se asigno la session: %s' % (data.session_id.name))
-            self.message_post(body=msg)
