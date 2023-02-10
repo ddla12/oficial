@@ -2,13 +2,33 @@
 
 from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
-
+from datetime import date
 
 class accountmovewp(models.Model):
     _inherit = "account.move"
 
     x_delivery_count = fields.Integer(string='Delivery Orders', compute='_compute_sale_picking_ids')
     x_last_picking_date_done = fields.Date('Última entrega válida', compute='_compute_last_picking_date_done')
+    x_due_days_count = fields.Integer(string='Días atraso pago', compute='_compute_due_days_count')
+    x_name_to_print = fields.Char(string='Nombre Factura', copy=True, readonly=False)
+
+    @api.depends('invoice_date_due')
+    def _compute_due_days_count(self):
+        for move in self:
+            move.x_due_days_count = 0
+            if move.invoice_date_due and move.move_type in ['out_invoice']:
+                date_today = date.today()
+                days_count = date_today - move.invoice_date_due
+
+                if days_count and days_count.days > 0:
+                    payments = self.env['account.payment.register'].search([('line_ids.id', 'in', move.line_ids.ids)],
+                                                                           order='payment_date desc')
+                    if payments and payments[0].payment_date and move.amount_residual == 0:
+                        payment_days_count = payments[0].payment_date - move.invoice_date_due
+                        if payment_days_count and payment_days_count.days > 0:
+                            move.x_due_days_count = payment_days_count.days+1
+                    else:
+                        move.x_due_days_count = days_count.days+1
 
     def _compute_last_picking_date_done(self):
         for move in self:
