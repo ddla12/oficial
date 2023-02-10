@@ -3,14 +3,20 @@
     <data noupdate="0">
 
         <record model="ir.module.category" id="fae_rule">
-            <field name="name">Facturación Electrónica</field>
+            <field name="name">FAE - Facturación Electrónica</field>
             <field name="description">Permisos de Facturación Electrónica</field>
             <field name="sequence">6</field>
         </record>
 
         <record id="FAE_app.group_user" model="res.groups">
-             <field name="name">Usuario de Facturación Electrónica</field>
+             <field name="name">FAE - Usuario de Facturación Electrónica</field>
              <field name="category_id" ref="fae_rule"/>
+        </record>
+
+        <record model="ir.rule" id="fae_incoming_doc_company_rule">
+            <field name="name">FAE - documents multi-company</field>
+            <field name="model_id" search="[('model','=','xfae.incoming.documents')]" model="ir.model"/>
+            <field name="domain_force">['|',('company_id', 'in', company_ids), ('company_id', '=', False)]</field>
         </record>
 
     </data>

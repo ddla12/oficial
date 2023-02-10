@@ -76,9 +76,11 @@ class XmlStrBuilder:
     def __str__(self):
         return self._file_str.getvalue()
 
+
 def modulo_instalado(env, module_name):
     modulo = env['ir.module.module'].search([('name', '=', module_name)])
     return modulo and modulo.state == 'installed'
+
 
 def get_datetime_dgt(fecha_hora=None):
     # La hora de Costa Rica está a 6 horas antes del Meridiano 0 (es UTC -6)
@@ -162,12 +164,12 @@ def val_identification_vat(identification_type_code, vat):
                     error_msg = 'El número de cédula debe debe tener 9 dígitos y sin guiones'
             elif identification_type_code == '02':  # Céd. Jurídica
                 if vat.isdigit() and len(vat) != 10:
-                    error_msg = 'El número de céd.Jurídica debe tener 10 dígitos y sin guionefs'
+                    error_msg = 'El número de céd.Jurídica debe tener 10 dígitos y sin guiones'
             elif identification_type_code == '03':  # DIMEX
                 if vat.isdigit() and len(vat) < 11 or len(vat) > 12:
                     error_msg = 'El DIMEX debe tener 11 o 12 dígitos y sin guiones'
             elif identification_type_code == '04':  # NITE
-                if vat.isdigit() and len(vat) != 9:
+                if vat.isdigit() and len(vat) != 10:
                     error_msg = 'El NITE  debe tener 10 dígitos y sin guiones'
     return error_msg
 
@@ -260,6 +262,7 @@ def gen_consecutivo(tipo_documento, consecutivo, sucursal_id, terminal_id):
 
     return consecutivo20
 
+
 def gen_clave_hacienda(doc, tipo_documento, consecutivo, sucursal_id, terminal_id, situacion=None):
 
     if not doc.company_id.x_identification_type_id:
@@ -330,7 +333,6 @@ def get_token_hacienda(company_id, fae_mode):
     token_time = tokens_time[fae_mode].get(company_id.id, False)
     token_expire = tokens_expire[fae_mode].get(company_id.id, 0)
     current_time = time.time()
-
 
     if token and (current_time - token_time < token_expire - 10):
         # _logger.info('>> get_token_hacienda: Existe un token cargado,  time_expire: %s ' % (str(token_expire)))
@@ -480,6 +482,7 @@ def get_mensaje_respuesta(xml_respuesta):
             pass
     return mensaje[:800]
 
+
 # Genera xml para el documento electrónico
 def gen_xml_v43(inv, sale_condition_code, total_servicio_gravado, total_servicio_exento, total_servicio_exonerado,
     total_mercaderia_gravado, total_mercaderia_exento, total_mercaderia_exonerado, total_otros_cargos,
@@ -568,7 +571,7 @@ def gen_xml_v43(inv, sale_condition_code, total_servicio_gravado, total_servicio
     xmlstr.Append('</Emisor>')
 
     # _logger.info('>> gen_xml_v43: Inicia tag Receptor')
-
+	# if inv.x_document_type == 'TE' or (inv.x_document_type == 'NC' and not receiver_company.vat):
     if inv.x_document_type == 'NC' and not receiver_company.vat:
         pass
     else:
@@ -642,6 +645,18 @@ def gen_xml_v43(inv, sale_condition_code, total_servicio_gravado, total_servicio
     # lineas del documento
     xmlstr.Append('<DetalleServicio>')
 
+    # procesa las lineas del documento
+    if inv.x_document_type == 'FEC':
+        receiver_exoneration = {}
+    else:
+        receiver_exoneration = {'id': -1,
+                                'TipoDocumento':  receiver_company.x_exo_type_exoneration and receiver_company.x_exo_type_exoneration.code or None,
+                                'NumeroDocumento': receiver_company.x_exo_exoneration_number,
+                                'NombreInstitucion': receiver_company.x_exo_institution_name,
+                                'fechaEmision': receiver_company.x_exo_date_issue and get_datetime(receiver_company.x_exo_date_issue) or None,
+                                }
+    exoneration_data = {}
+    exoneration = inv.env['xpartner.exoneration']
     numero_linea = 0
     jlines = json.loads(lines)
     for (k, v) in jlines.items():
@@ -692,14 +707,22 @@ def gen_xml_v43(inv, sale_condition_code, total_servicio_gravado, total_servicio
 
                     if inv.x_document_type != 'FEE':
                         if b.get('exoneracion'):
+                            exoneration_id = b['exoneracion'].get('exoneration_id')
+                            if not exoneration_id:
+                                exoneration_data = receiver_exoneration   # exoneration queda apuntando a los datos el receiver
+                            elif not exoneration_data or exoneration_data.get('id') != exoneration_id:
+                                exoneration = inv.env['xpartner.exoneration'].browse(exoneration_id)
+                                exoneration_data = {'id': exoneration.id,
+                                                    'TipoDocumento':  exoneration.type_exoneration.code,
+                                                    'NumeroDocumento': exoneration.exoneration_number,
+                                                    'NombreInstitucion': exoneration.institution_name,
+                                                    'fechaEmision': exoneration.date_issue and get_datetime(exoneration.date_issue) or None,
+                                                    }
                             xmlstr.Append('<Exoneracion>')
-                            xmlstr.Tag('TipoDocumento', receiver_company.x_exo_type_exoneration.code )
-                            xmlstr.Tag('NumeroDocumento', receiver_company.x_exo_exoneration_number )
-                            xmlstr.Tag('NombreInstitucion', receiver_company.x_exo_institution_name )
-                            fechaEmision = None
-                            if receiver_company.x_exo_date_issue:
-                                fechaEmision = get_datetime(receiver_company.x_exo_date_issue)
-                            xmlstr.Tag('FechaEmision', fechaEmision)
+                            xmlstr.Tag('TipoDocumento', exoneration_data['TipoDocumento'] )
+                            xmlstr.Tag('NumeroDocumento', exoneration_data['NumeroDocumento']  )
+                            xmlstr.Tag('NombreInstitucion', exoneration_data['NombreInstitucion']  )
+                            xmlstr.Tag('FechaEmision', exoneration_data['fechaEmision'])
                             xmlstr.Tag('PorcentajeExoneracion', str(int(b['exoneracion']['porc_exonera'])) )
                             xmlstr.Tag('MontoExoneracion', str(b['exoneracion']['monto_exonera']) )
                             xmlstr.Append('</Exoneracion>')
@@ -793,8 +816,9 @@ def gen_xml_v43(inv, sale_condition_code, total_servicio_gravado, total_servicio
             xmlotros.Tag_prop('OtroTexto', 'codigo', 'NoDocumento', str(escape(ref_oc)) )
 
     # OtroTexto (extra)    -- En odoo15 puede que llegue "<p><br></p>" y esto causa error al firmar el documento
-    if other_extra_ext and other_extra_ext != '<p><br></p>':
-        xmlotros.Tag('OtroTexto', str(escape(other_extra_ext)))
+    if other_extra_ext:
+        other_text = other_extra_ext.replace('<p>', '').replace('<br>', '').replace('</p>', '')
+        xmlotros.Tag('OtroTexto', str(escape(other_text)), len(other_text) > 0)
 
     # OtroTexto o OtroContenido en este orden estricto
     other_text = inv.xml_OtroTexto()
@@ -868,6 +892,9 @@ def parser_xml(identification_type_obj, company_obj, currency_obj, origin, docxm
 
     elif isinstance(docxml, str):
         xml_doc = base64.encodebytes(docxml.encode('utf-8'))
+    elif isinstance(docxml, bytes):
+        # xml_doc = docxml.decode('utf-8')  # antes del 10-ene-2023
+        xml_doc = base64.encodebytes(docxml)
 
     doc = minidom.parseString(docxml)
     # xml_doc = base64.encodebytes(docxml)
@@ -898,10 +925,8 @@ def parser_xml(identification_type_obj, company_obj, currency_obj, origin, docxm
                 identification_type = getElementTag_data(tag_identif_receptor.getElementsByTagName('Tipo'))
                 identification_number = getElementTag_data(tag_identif_receptor.getElementsByTagName('Numero'))
 
-                company_id = None
                 company = company_obj.filtered(lambda c: c.vat == identification_number)
-                for cia in company:
-                    company_id = cia.id
+                company_id = company[0].id if len(company) > 0 else None
 
                 rec = identification_type_obj.filtered(lambda t: t.code == identification_type)
                 identification_type_id = (rec and rec.id or None)
@@ -918,7 +943,6 @@ def parser_xml(identification_type_obj, company_obj, currency_obj, origin, docxm
 
         f_emision = doc.getElementsByTagName('FechaEmision')[0].childNodes[0].data
         version_normativa = '43'
-
 
         issuer_identification_type = tag_issuer.getElementsByTagName('Tipo')[0].childNodes[0].data
 
@@ -962,15 +986,10 @@ def parser_xml(identification_type_obj, company_obj, currency_obj, origin, docxm
         # El archivo es un Mensaje de Hacienda
         # _logger.info('>> fae_utiles.parser_xml: clave_hacienda %s   es_mensaje_hacienda', clave_hacienda)
         identification_number = getElementTag_data(doc.getElementsByTagName('NumeroCedulaReceptor'))
-        company_id = None
-        company = company_obj.filtered(lambda c: c.vat == identification_number)
-        for cia in company:
-            company_id = cia.id
 
         issuer_identification_type = getElementTag_data(doc.getElementsByTagName('TipoIdentificacionEmisor'))
 
         values = {
-            'company_id': company_id,
             'identification_number': identification_number,
             'issuer_identification_type': issuer_identification_type,
             'issuer_identification_num': doc.getElementsByTagName('NumeroCedulaEmisor')[0].childNodes[0].data,
@@ -981,6 +1000,9 @@ def parser_xml(identification_type_obj, company_obj, currency_obj, origin, docxm
             'amount_total': doc.getElementsByTagName('TotalFactura')[0].childNodes[0].data,
             'origin': origin,
             }
+        company = company_obj.filtered(lambda c: c.vat == identification_number)
+        if len(company) > 0:
+            values.update({'company_id': company[0].id})
 
     if issuer_identification_type:
         rec = identification_type_obj.filtered(lambda t: t.code == issuer_identification_type)
@@ -1175,7 +1197,7 @@ def send_mail_fae(inv, full_mail_template):
             attachment = inv.env['ir.attachment'].search([('res_model', '=', inv._name),
                                                            ('res_id', '=', inv.id),
                                                            ('res_field', '=', 'x_xml_comprobante')],
-                                                          order='id desc', limit=1)
+                                                         order='id desc', limit=1)
             if attachment:
                 attachment.name = inv.x_xml_comprobante_fname
                 attachment_resp = inv.env['ir.attachment'].search([('res_model', '=', inv._name),
@@ -1186,9 +1208,10 @@ def send_mail_fae(inv, full_mail_template):
                     attachment_resp.name = inv.x_xml_respuesta_fname
                     email_template.attachment_ids = [(6, 0, [attachment.id, attachment_resp.id])]
                 try:
-                    email_template.send_mail(inv.id, force_send=True)
+                    email_template.send_mail(inv.id, force_send=True, raise_exception=True)
                     new_state_email = 'E'
                 except Exception as error:
+                    inv.message_post(subject='Note', body='Falla intentando enviar correo a: ' + partner_email + ' con el  Documento ' + inv.x_sequence)
                     pass
                 # 2022-0129: Las siguientes 2 líneas se puso porque odoo hizo una actualización en esta semana
                 #            que provocó que se perdieran la asociación de los attachment con los documentos

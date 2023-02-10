@@ -1,0 +1,189 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* invoice_to_stock
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 14.0+e-20201208\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-02-02 15:47+0000\n"
+"PO-Revision-Date: 2023-02-02 15:47+0000\n"
+"Last-Translator: Prointec\n"
+"Language-Team: Spanish\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: invoice_to_stock
+#: model:ir.model,name:invoice_to_stock.model_account_move_reversal
+msgid "Account Move Reversal"
+msgstr "Revocación de movimiento en cuenta"
+
+#. module: invoice_to_stock
+#: code:addons/invoice_to_stock/models/stock_picking_type.py:0
+#: code:addons/invoice_to_stock/models/stock_picking_type.py:0
+#, python-format
+msgid "Action denied"
+msgstr "Acción denegada"
+
+#. module: invoice_to_stock
+#: model_terms:ir.ui.view,arch_db:invoice_to_stock.xinvoice_stock_form_view
+msgid "Afectar Stock"
+msgstr ""
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,field_description:invoice_to_stock.field_stock_picking_type__affects_stock
+msgid "Affects Stock"
+msgstr "Afecta Stock"
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_bank_statement_line__x_sale_order_id
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move__x_sale_order_id
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_payment__x_sale_order_id
+msgid "Cotización"
+msgstr ""
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,help:invoice_to_stock.field_account_bank_statement_line__x_sale_order_id
+#: model:ir.model.fields,help:invoice_to_stock.field_account_move__x_sale_order_id
+#: model:ir.model.fields,help:invoice_to_stock.field_account_payment__x_sale_order_id
+msgid "Cotización que originó la factura"
+msgstr ""
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_bank_statement_line__x_picking_count
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move__x_picking_count
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_payment__x_picking_count
+msgid "Count"
+msgstr ""
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move__display_name
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move_line__display_name
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move_reversal__display_name
+#: model:ir.model.fields,field_description:invoice_to_stock.field_stock_move__display_name
+#: model:ir.model.fields,field_description:invoice_to_stock.field_stock_picking__display_name
+#: model:ir.model.fields,field_description:invoice_to_stock.field_stock_picking_type__display_name
+msgid "Display Name"
+msgstr "Nombre mostrado"
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move__id
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move_line__id
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move_reversal__id
+#: model:ir.model.fields,field_description:invoice_to_stock.field_stock_move__id
+#: model:ir.model.fields,field_description:invoice_to_stock.field_stock_picking__id
+#: model:ir.model.fields,field_description:invoice_to_stock.field_stock_picking_type__id
+msgid "ID"
+msgstr ""
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,help:invoice_to_stock.field_account_bank_statement_line__x_picking_type_id
+#: model:ir.model.fields,help:invoice_to_stock.field_account_move__x_picking_type_id
+#: model:ir.model.fields,help:invoice_to_stock.field_account_move_reversal__x_picking_type_id
+#: model:ir.model.fields,help:invoice_to_stock.field_account_payment__x_picking_type_id
+msgid "Indica el tipo de movimiento de inventario"
+msgstr ""
+
+#. module: invoice_to_stock
+#: code:addons/invoice_to_stock/models/stock_picking_type.py:0
+#, python-format
+msgid ""
+"It is not possible to modify the destination if there are already movements linked to it.\n"
+"Please contact an Administrator."
+msgstr ""
+"No es posible modificar el destino si ya existen movimientos vinculados al mismo.\n"
+"Por favor contacté al Administrador."
+
+#. module: invoice_to_stock
+#: code:addons/invoice_to_stock/models/stock_picking_type.py:0
+#, python-format
+msgid ""
+"It is not possible to modify the origin if there are already movements linked to it.\n"
+"Please contact an Administrator."
+msgstr ""
+"No es posible modificar el origen si ya existen movimientos vinculados al mismo.\n"
+"Por favor contacté al Administrador."
+
+#. module: invoice_to_stock
+#: model:ir.model,name:invoice_to_stock.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: invoice_to_stock
+#: model:ir.model,name:invoice_to_stock.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move____last_update
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move_line____last_update
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move_reversal____last_update
+#: model:ir.model.fields,field_description:invoice_to_stock.field_stock_move____last_update
+#: model:ir.model.fields,field_description:invoice_to_stock.field_stock_picking____last_update
+#: model:ir.model.fields,field_description:invoice_to_stock.field_stock_picking_type____last_update
+msgid "Last Modified on"
+msgstr "Última modificación el"
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_bank_statement_line__x_picking_type_id
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move__x_picking_type_id
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_payment__x_picking_type_id
+msgid "Mov.Inventario"
+msgstr ""
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_bank_statement_line__x_invoice_picking_id
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move__x_invoice_picking_id
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_payment__x_invoice_picking_id
+msgid "Picking"
+msgstr ""
+
+#. module: invoice_to_stock
+#: model:ir.model,name:invoice_to_stock.model_stock_picking_type
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move_reversal__x_picking_type_id
+msgid "Picking Type"
+msgstr "Tipo de albarán"
+
+#. module: invoice_to_stock
+#: model_terms:ir.ui.view,arch_db:invoice_to_stock.xinvoice_stock_form_view
+msgid "Shipment"
+msgstr ""
+
+#. module: invoice_to_stock
+#: model:ir.model,name:invoice_to_stock.model_stock_move
+msgid "Stock Move"
+msgstr "Movimiento stock"
+
+#. module: invoice_to_stock
+#: model_terms:ir.ui.view,arch_db:invoice_to_stock.xaccount_move_reverse_view_form
+msgid "Tipo Operación"
+msgstr ""
+
+#. module: invoice_to_stock
+#: model:ir.model,name:invoice_to_stock.model_stock_picking
+msgid "Transfer"
+msgstr "Transferencia"
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_bank_statement_line__x_picking_code
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move__x_picking_code
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_payment__x_picking_code
+msgid "X Picking Code"
+msgstr ""
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,field_description:invoice_to_stock.field_stock_picking__x_account_move_id
+msgid "account move id"
+msgstr ""
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,field_description:invoice_to_stock.field_stock_move__x_account_move_line_id
+msgid "account move line id"
+msgstr ""
+
+#. module: invoice_to_stock
+#: model:ir.model.fields,field_description:invoice_to_stock.field_account_move_reversal__x_default_picking_type_id
+msgid "default tipo oper"
+msgstr ""

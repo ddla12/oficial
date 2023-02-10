@@ -17,6 +17,7 @@
                         <filter string="Céd.Receptor" name="identification_number" context="{'group_by':'identification_number'}" />
                         <filter string="Código Aceptación" name="code_accept" context="{'group_by':'code_accept'}"/>
                         <filter string="Emisor" name="issuer_name" context="{'group_by':'issuer_name'}"/>
+                        <filter string="Compañía" name="company_id" domain="[]"  context="{'group_by':'company_id'}"/>
                         <separator/>
                         <filter string="Fecha emisión" name="bill_date" context="{'group_by': 'bill_date'}"/>
                     </group>                    
@@ -60,10 +61,14 @@
                 <form string="Documento Recibido" duplicate="0" create="0">
                     <header>
                         <field name="lines_count" invisible="1"/>
+                        <field name="show_lineas_doc" invisible="1"/>
                         <button name="action_send_aceptacion" type="object" string="Enviar a Hacienda" 
                                     attrs="{'invisible':['|',('code_accept','not in',('A','P','R')),('state_response_dgt','=','1')]}"/>
                         <button name="consulta_status_doc_enviado" type="object" string="Consultar Hacienda" colspan="2" 
                                     attrs="{'invisible':['|',('state_response_dgt','=', False),('state_response_dgt','!=','PRO')]}"/>
+<!--                        <button name="action_reload_detail_1doc" type="object" string="Cargar Detalle"-->
+<!--                                    attrs="{'invisible':[('lines_count','>',0)]}" />-->
+<!--                        <button name="action_graba_temp" type="object" string="Prueba XML" />-->
                     </header>
                     <sheet string="Documento Recibido">
                         <widget name="web_ribbon" title="Rechazado" bg_color="bg-danger" attrs="{'invisible': [('state_response_dgt', '!=', '3')]}"/>
@@ -100,7 +105,7 @@
                             </group>
                         </group>
                         <notebook>
-                            <page string="Detalles aceptación">
+                            <page id='page_acceptance' string="Detalles aceptación">
                                 <group>
                                     <group>
                                         <field name="code_accept"/>
@@ -128,10 +133,10 @@
                                     </group>
                                 </group>
                             </page>
-                            <page string="PDF">
+                            <page id='page_pdf' string="PDF">
                                 <field name="issuer_pdf" widget="pdf_viewer" readonly="1"/>
                             </page>
-                            <page string="Rechazos de Hacienda" >
+                            <page id='page_rejected' string="Rechazos de Hacienda" >
                                 <field name="documents_rejected" readonly="1">
                                     <tree>
                                         <field name="code_accept" optional="show" />
@@ -143,6 +148,19 @@
                                     </tree>
                                 </field>
                             </page>                            
+                            <page id='page_details' string="Líneas de documento" attrs="{'invisible': [('show_lineas_doc', '=', False)]}" default_order="line_number">
+                                <field name="lines_ids" readonly="1">
+                                    <tree>
+                                        <field name="description" />
+                                        <field name="measurement_unit" string="Unid."/>
+                                        <field name="quantity" />
+                                        <field name="price_unit" />
+                                        <field name="subtotal" />
+                                        <field name="tax_net" />
+                                        <field name="line_total_amount" />
+                                    </tree>
+                                </field>
+                            </page>
                         </notebook>
                     </sheet>
                 </form>

@@ -4,6 +4,7 @@ from odoo import models, fields, api
 
 class xFaeIncomingDocSummaryReport(models.TransientModel):
     _name = 'xfae.incoming_doc_summary_report'
+    _description = 'FAE incoming document summary report'
 
     date_from = fields.Date(string='Start date', required=True)
     date_to = fields.Date(string='End date', required=True)

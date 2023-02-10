@@ -65,13 +65,12 @@ class XFaeIncomingDoc(models.Model):
     _name = "xfae.incoming.documents"
     _description = "Documentos recibidos de proveedores"
     _rec_name = "issuer_sequence"
-    _order = "bill_date desc, identification_number, issuer_identification_num"
+    _order = "id desc"
 
     version = fields.Char(string='Versión Normativa', size=6)
     identification_type_id = fields.Many2one('xidentification.type', string='Tipo Identificación', )
     identification_number = fields.Char(string='Id Receptor', size=20)
-    company_id = fields.Many2one('res.company', string='Company')
-
+    company_id = fields.Many2one('res.company', string='Compañía')
     issuer_identification_type = fields.Char(string='Tipo Id.Emisor', size=2)
     issuer_identification_type_id = fields.Many2one('xidentification.type', string='Tipo Id. Emisor', )
     issuer_identification_num = fields.Char(string='Id Emisor', size=20)
@@ -87,15 +86,13 @@ class XFaeIncomingDoc(models.Model):
                                         required=False, default='FE', )
     issuer_sequence = fields.Char(string='Número Documento', size=20)
     issuer_electronic_code50 = fields.Char(string='Clave Hacienda', size=50)
-    lines_ids = fields.One2many('xfae.incoming.documents_det', 'document_id', string='Detail Lines')
+    lines_ids = fields.One2many('xfae.incoming.documents_det', 'document_id', string='Detail Lines', readonly=True)
     lines_count = fields.Integer(compute='_compute_lines_count', readonly=True)
 
     issuer_xml_doc = fields.Binary(string='Documento Electrónico XML', attachment=True, store=True)
     issuer_xml_response = fields.Binary(string='Respuesta Hacienda XML', attachment=True, store=True)
     issuer_pdf = fields.Binary(string='Issuer PDF', attachment=True, store=True)
     quantity_xmls = fields.Integer(string='Cantidad XML')
-    
-    # move_id = fields.Many2one("account.move", string="Factura", required=False)
 
     include_tax_tag = fields.Boolean(string='Impuestos', default=False)
     #  currency = fields.Char(string='Currency')
@@ -158,12 +155,15 @@ class XFaeIncomingDoc(models.Model):
                                         help='Habilita el documento para que pueda ser ingresado Cuentas por Pagar')
 
     # campo para almacenar el ID del invoice que utilizó este documento
-    invoice_id = fields.Integer(string="Invoice ID", copy=False, 
-                                help="Este campo es solo para almacenar el ID del invoice que lo utilizó")
+    # invoice_id = fields.Integer(string="Invoice ID", copy=False, ondelete='set null',
+    #                             help="Este campo es solo para almacenar el ID del invoice que lo utilizó")
+    invoice_id = fields.Many2one('account.move', string="Factura", copy=False, ondelete='set null',
+                                help="Factura de proveedor en que se conbabilizó este documento")
 
     purchase_registried = fields.Boolean(string='Bill Contabilizado', compute='_compute_purchase_registried',
                                         search="_search_purchase_registried",
                                         help='Indica si el documento ya fue ingresado en compras')
+    show_lineas_doc = fields.Boolean(string='Show Lineas Doc', compute='_compute_show_lineas_doc')
 
     _sql_constraints = [('issuer_electronic_code50_uniq', 'unique (issuer_electronic_code50, company_id)',
                         "La clave numérica deben ser única"),
@@ -190,18 +190,8 @@ class XFaeIncomingDoc(models.Model):
             if rec.code_accept:
                 raise ValidationError('El documento: %s ya tiene aceptación' % (rec.issuer_sequence))
             elif rec.invoice_id:
-                raise ValidationError('El documento: %s ya está asociado con documento ingresado en Proveedor' % (rec.issuer_sequence))
+                raise ValidationError('El documento: %s ya está asociado con documento ingresado Facturas de compra' % (rec.issuer_sequence))
         return super(XFaeIncomingDoc, self).unlink()
-
-    @api.model
-    def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
-        aux = ['|', ('company_id', 'in', self.env.companies.ids), ('company_id', '=', False)]
-
-        for a in aux:
-            domain.append(a)
-
-        res = super(XFaeIncomingDoc, self).search_read(domain, fields, offset, limit, order)
-        return res
 
     def _search_purchase_registried(self, operator, value):
         field_id = self.search([]).filtered(lambda x: x.purchase_registried == value)
@@ -210,6 +200,15 @@ class XFaeIncomingDoc(models.Model):
     def _compute_lines_count(self):
         for rec in self:
             rec.lines_count = len(rec.lines_ids)
+
+    def _compute_show_lineas_doc(self):
+        for rec in self:
+            db_create_date = self.env['ir.config_parameter'].sudo().get_param('database.create_date')
+            if (db_create_date >= '2023-01-01' or datetime.datetime.strftime(rec.bill_date, '%Y-%m-%d') >= '2024-01-01'
+                    or rec.identification_number in ('3101155732', '3101598979', '3101653297')):
+                rec.show_lineas_doc = True
+            else:
+                rec.show_lineas_doc = False
 
     def _compute_purchase_registried(self):
         for rec in self:
@@ -313,7 +312,7 @@ class XFaeIncomingDoc(models.Model):
                     if clave_hacienda and flag2save:
                         complete_vals.update({'email_account_id': server.id})
                         # _logger.info('>> fae_incoming_doc.read_email/pop:    antes de save_incoming document')
-                        res = self.save_incoming_document(clave_hacienda, complete_vals, attach_pdf)
+                        self.save_incoming_document(clave_hacienda, complete_vals, attach_pdf)
 
             except Exception as e:
                 if msg_dict:
@@ -394,11 +393,12 @@ class XFaeIncomingDoc(models.Model):
         fref = datetime.datetime(fref.year, fref.month, 11)  # aproximadamente 10 días habiles
         date_str = fref.strftime('%Y-%m-%d')
         # _logger.info('>> fae_incoming_doc.read_email: date_str %s', date_str )
-        documents = self.env['xfae.incoming.documents'].search([('bill_date', '<', date_str), ('ready2accounting', '=', False), ('code_accept', '=', False)])
-        for rec in documents:
-            if rec.company_id:
-                rec.code_accept = 'AA'
-                rec.ready2accounting = True
+        # documents = self.env['xfae.incoming.documents'].search([('bill_date', '<', date_str), ('ready2accounting', '=', False), ('code_accept', '=', False)])
+        documents = self.env['xfae.incoming.documents'].search([('bill_date', '<', date_str), ('code_accept', '=', False)])
+        # for rec in documents:
+        #     if rec.company_id and rec.response_state != '3':
+        #         rec.code_accept = 'AA'
+        #         rec.ready2accounting = True
 
         return True
 
@@ -618,6 +618,126 @@ class XFaeIncomingDoc(models.Model):
             for detail_doc in detail_doc_vals:
                 self.env['xfae.incoming.documents_det'].sudo().create(detail_doc)
         return { 'type': 'ir.actions.client', 'tag': 'reload',}
+
+    def carga_lineas_xml(self):
+        result = False
+        if not self.lines_ids and self.issuer_xml_doc:
+            if not self.version:
+                self.version = '43'
+            detail_doc_vals = fae_utiles.parser_xml_detail(self, self.issuer_xml_doc)
+            for detail_doc in detail_doc_vals:
+                self.env['xfae.incoming.documents_det'].sudo().create(detail_doc)
+            result = True
+        return result
+
+    # Contabilizar documento recibido
+    def action_accounting_doc(self):
+        return
+        # aun no esta terminado
+        msg_error = None
+        for document in self:
+            if not document.company_id:
+                msg_error = 'La factura: %s no pertenece a la compañía, fue emitida a la cédula: %s' % (document.issuer_sequence, document.issuer_identification_num)
+            elif document.invoice_id:
+                msg_error = 'La factura: %s ya había sido contabilizado' % (document.issuer_sequence)
+            elif document.response_state != '1':
+                msg_error = 'La factura: %s recibida no fue aceptada de Hacienda' % (document.issuer_sequence)
+            else:
+                partner = self.env['res.partner'].search([('vat', '=', document.issuer_identification_num), ('x_identification_type_id', '=', document.issuer_identification_type_id.id)], limit=1)
+                if not partner:
+                    partner = self.env['res.partner'].sudo().with_company(document.company_id).with_context(
+                        default_type='contact').create({
+                                                        'name': document.issuer_name,
+                                                        'vat': document.issuer_identification_num,
+                                                        'x_identification_type_id': document.issuer_identification_type_id.id or None,
+                                                    })
+                currency = document.currency_id if document.currency_id \
+                                                else self.env['res.currency'].search([('name', '=', 'CRC')], limit=1)
+
+                move_vals = {'name':  document.get_name_for_bill(),
+                             'partner_id': partner.id,
+                             'currency_id': currency.id,
+                             'ref': document.issuer_sequence,
+                             'x_currency_rate': round(1.0 / currency.rate, 5),
+                             'x_fae_incoming_doc_id': document.id,
+                             }
+
+                doc_move = self.env['account.move'].sudo().with_company(self.company_id).with_context(
+                                    default_move_type='in_invoice').create(move_vals)
+                if not doc_move:
+                    raise ValidationError('No fue posible registrar la factura en contabilidad')
+                else:
+                    for line in self.get_purchase_move_lines(doc_move):
+                        res = self.env['account.move.line'].sudo().with_context(check_move_validity=False).create(line)
+                    document.invoice_id = doc_move.id
+        if len(self) and msg_error:
+            raise ValidationError(msg_error)
+
+    # Devuelve un json con los datos de las líneas del documento resumidas por porcentaje de impuesto
+    def get_lines_summary_by_tax(self):
+        tax_percent_list = []
+        tax_lines = []
+        for line in self.lines_ids:
+            if (line.subtotal or 0) == 0:
+                tax_rate = 0
+            else:
+                tax_rate = round((line.tax_net or 0) / line.subtotal * 100, 0)
+
+            if tax_rate not in tax_percent_list:
+                tax_percent_list.append(tax_rate)
+                account_tax = self.env['account.tax'].search([('type_tax_use', '=', 'purchase'), ('amount', '=', tax_rate)], limit=1)
+                tax_lines.append({
+                                'tax_id': account_tax.id if account_tax else None,
+                                'tax_rate': tax_rate,
+                                'subtotal': (line.subtotal or 0),
+                                'tax_amount': (line.tax_net or 0),
+                                'total': (line.line_total_amount or 0)
+                                })
+            else:
+                # la tasa existen en la Lista
+                i = tax_percent_list.index(tax_rate)
+                tax_lines[i]['subtotal'] += (line.subtotal or 0)
+                tax_lines[i]['tax_amount'] += (line.tax_net or 0)
+                tax_lines[i]['total'] += (line.line_total_amount or 0)
+
+        return tax_lines
+
+    def get_purchase_move_lines(self, purchase_move):
+        # Devuelve un json con los datos de las líneas de la factura de proveedor agrupadas por impuesto
+        account_id = purchase_move.journal_id.default_account_id
+        lines_summary_by_tax = self.get_lines_summary_by_tax()
+
+        move_lines_by_taxes = []
+        for tax_line in lines_summary_by_tax:
+            taxes = []
+            if tax_line['tax_id']:
+                taxes.append((4, tax_line['tax_id']))
+            elif tax_line['tax_amount'] != 0:
+                raise ValidationError('Para el documento: %s no fue posible encontrar un % de imp.: %s' % (purchase_move.x_sequence, tax_line['tax_rate']))
+            debit = tax_line['subtotal'] if purchase_move.x_document_type != 'NC' else 0
+            credit = tax_line['subtotal'] if purchase_move.x_document_type == 'NC' else 0
+
+            vals = {
+                    'name': 'Compras con imp. del ' + str(tax_line['tax_rate']) + ' %',
+                    'debit': debit or 0.0,
+                    'credit': credit or 0.0,
+                    'account_id': account_id.id or False,
+                    'currency_id': purchase_move.currency_id.id,
+                    'quantity': 1.0,
+                    'amount_currency': tax_line['subtotal'],
+                    'partner_id': purchase_move.partner_id.id,
+                    'price_unit': tax_line['subtotal'],
+                    'move_id': purchase_move.id,
+                    'tax_ids': taxes,
+                    'company_id': purchase_move.company_id.id,
+                    'company_currency_id': purchase_move.currency_id.id,
+                    'journal_id': purchase_move.journal_id.id,
+                    'recompute_tax_line': True,
+                    'predict_from_name': False,
+                    'exclude_from_invoice_tab': False,
+            }
+            move_lines_by_taxes.append((0, 0, vals))
+        return move_lines_by_taxes
 
 class XFaeIncomingDocDetail(models.Model):
     _name = "xfae.incoming.documents_det"
