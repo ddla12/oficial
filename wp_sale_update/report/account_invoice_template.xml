@@ -4,15 +4,15 @@
         <xpath expr="//tr[@id='t1_tr1']/td[@id='h1_partner_name_data']" position="replace">
             <td id="h1_partner_name_data">
                 <t t-if="doc.partner_id.name != 'CLIENTE CONTADO'">
-                    <t t-if="o.partner_id.parent_id and o.partner_id.parent_id.name != o.partner_id.name ">
-                        <span style="font-size:18px; font-weight:bold;" t-field="o.partner_id.parent_id.name"/>
+                    <t t-if="doc.partner_id.parent_id and dod.partner_id.parent_id.name != doc.partner_id.name ">
+                        <span style="font-size:18px; font-weight:bold;" t-field="doc.partner_id.parent_id.name"/>
                         <br/>
                     </t>
-                    <span style="font-size:18px; font-weight:bold" t-field="o.partner_id.name"/>
+                    <span style="font-size:18px; font-weight:bold" t-field="doc.partner_id.name"/>
                 </t>
                 <t t-if="doc.partner_id.name == 'CLIENTE CONTADO'">
-                    <t t-if="o.x_name_to_print">
-                        <span style="font-size:18px; font-weight:bold" t-field="o.x_name_to_print"/>
+                    <t t-if="doc.x_name_to_print">
+                        <span style="font-size:18px; font-weight:bold" t-field="doc.x_name_to_print"/>
                     </t>
                 </t>
             </td>
