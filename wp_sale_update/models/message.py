@@ -4,7 +4,7 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 
 
-class PettyCashConfirm(models.TransientModel):
+class AlertConfirm(models.TransientModel):
     _name = 'message.alert'
 
     type_message = fields.Selection([
